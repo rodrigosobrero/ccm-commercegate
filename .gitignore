@@ -99,3 +99,8 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# django
+payapp/migrations/
+*.pyc
+db.sqlite3
