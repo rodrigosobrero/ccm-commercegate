@@ -22,6 +22,7 @@ from payapp.views import cancel_payment
 from payapp.views import change_token_card
 from payapp.views import user_status
 from payapp.views import get_cards
+from payapp.views import get_enabled_card
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -31,4 +32,5 @@ urlpatterns = [
     url(r'^api/v1/set/changecard', change_token_card),
     url(r'^api/v1/get/userstatus/(?P<user_id>[\w\-]+)', user_status),
     url(r'^api/v1/get/cards/(?P<user_id>[\w\-]+)',get_cards),
+    url(r'^api/v1/get/enabledcard/(?P<user_id>[\w\-]+)',get_enabled_card),
 ]

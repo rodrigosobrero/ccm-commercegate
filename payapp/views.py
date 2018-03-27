@@ -420,7 +420,7 @@ def user_status(request, user_id):
 #                                Devuelve JSON con listado de tarjetas del usuario                           #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Parametros: user_id                                                                                        #
-# Retorno: Listado de tarjeas 
+# Retorno: Listado de tarjeas                                                                                #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @require_http_methods(["GET"])
 def get_cards(request, user_id):
@@ -454,6 +454,42 @@ def get_cards(request, user_id):
     return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
         
         
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                Devuelve JSON con la tarjeta activa del usuario                             #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Parametros: user_id                                                                                        #
+# Retorno: Listado de tarjeas                                                                                #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++        
 @require_http_methods(["GET"])
-def get_payments():
-    pass
+def get_enabled_card(request, user_id):
+    # Verifico ApiKey
+    cap = __check_apikey(request)
+    if cap['status'] == 'error':
+        return HttpResponse(status=http_UNAUTHORIZED)
+
+    # Verifico que el usuario exista
+    try:
+        user = User.objects.get(user_id=user_id)
+    except ObjectDoesNotExist:
+        message = "user_id %s does not exist" % user_id
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+        
+    try:    
+        card = Card.objects.get(user=user, enabled=True)
+    except ObjectDoesNotExist:
+        message = "card enabled not found"
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+    
+    ret = {}
+    ret['token']      = card.token
+    ret['number']     = card.number
+    ret['name']       = card.name
+    ret['expiration'] = card.expiration
+    ret['cvc']        = card.cvc
+    ret['integrator'] = card.integrator.name
+    ret['enabled']    = card.enabled
+        
+    body = {'status': 'success', 'value': ret}
+    return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
