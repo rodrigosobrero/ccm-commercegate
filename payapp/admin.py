@@ -17,7 +17,7 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(models.Country)
 class CountryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'code', 'currency']
+    list_display = ['name', 'code', 'currency', 'tax', 'full_price']
 
 @admin.register(models.Integrator)
 class IntegratorAdmin(admin.ModelAdmin):
@@ -29,12 +29,12 @@ class IntegratorSettingAdmin(admin.ModelAdmin):
 
 @admin.register(models.UserPayment)
 class UserPaymentAdmin(admin.ModelAdmin):
-    list_display = ['user', 'amount', 'currency', 'payment_date', 'recurrence', 'status', 'enabled', 'creation_date']
+    list_display = ['user_payment_id', 'user', 'amount', 'currency', 'payment_date', 'recurrence', 'status', 'enabled', 'creation_date']
 
 @admin.register(models.Card)
 class CardAdmin(admin.ModelAdmin):
-    list_display = ['user', 'token', 'integrator', 'enabled', 'creation_date']
+    list_display = ['card_id', 'user', 'token', 'integrator', 'enabled', 'creation_date']
 
 @admin.register(models.PaymentHistory)
 class PaymentHistoryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'card', 'user_payment']
+    list_display = ['payment_id', 'user_payment', 'status', 'card', 'gateway_id', 'amount', 'taxable_amount', 'vat_amount']

@@ -17,6 +17,7 @@ from models import PaymentHistory
 from models import Currency
 from models import Integrator
 from models import Country
+from models import IntegratorSetting
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Misc
@@ -24,24 +25,29 @@ from models import Country
 import json
 from datetime import datetime
 from time import mktime
+from time import time
+
+from paymentez import PaymentezGateway
+from paymentez import PaymentezTx
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Response Codes
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-http_POST_OK        = 201
-http_REQUEST_OK     = 200
-http_NOT_FOUND      = 404
-http_BAD_REQUEST    = 400
-http_NOT_ALLOWED    = 405
-http_UNAUTHORIZED   = 401
-http_INTERNAL_ERROR = 500
+http_POST_OK              = 201
+http_REQUEST_OK           = 200
+http_NOT_FOUND            = 404
+http_BAD_REQUEST          = 400
+http_UNPROCESSABLE_ENTITY = 422
+http_NOT_ALLOWED          = 405
+http_UNAUTHORIZED         = 401
+http_INTERNAL_ERROR       = 500
 
 
 
 # Create your views here.
 
-def __validate_json(json_data, keys):        
-    for key in keys:    
+def __validate_json(json_data, keys):
+    for key in keys:
         if key not in json_data:
             message = "missing key in json: %s" % key
             return {'status': 'error', 'message': message}
@@ -65,6 +71,8 @@ def __validate_json(json_data, keys):
     return {'status': 'success'}
 
 def __payday_calc(payment_date):
+    if payment_date == 0 or payment_date == 0.0 or payment_date == "0":
+        payment_date = time()
     day = datetime.fromtimestamp(int(payment_date)).strftime('%d')
     if int(day) > 28:
         return 28
@@ -80,13 +88,20 @@ def __check_apikey(request):
     else:
         return {'status': 'error'}
 
-    
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#                                Creacion de nuevo pago recurrente                                           #
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# JSON - Mandatorios: user_id, email, country, token, integrator, amount, currency, payment_date, recurrence #
-# JSON - Opcionales: discount, disc_counter                                                                  #
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+def __get_card(user, token):
+    try:
+        card = Card.objects.get(user=user, token=token)
+        return card
+    except:
+        return None
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                Creacion de nuevo pago recurrente                                                                  #
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# JSON - Mandatorios: user_id, email, country, token, card_number, card_exp, integrator, amount, currency, payment_date, recurrence #
+# JSON - Opcionales: discount, disc_counter                                                                                         #
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @require_http_methods(["POST"])
 def create_payment(request):
     # Verifico ApiKey
@@ -103,7 +118,7 @@ def create_payment(request):
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico las key mandatorios del json    
-    keys = ['user_id', 'email', 'country', 'token', 'integrator', 'amount', 'currency', 'payment_date', 'recurrence']
+    keys = ['user_id', 'email', 'country', 'token', 'card_number', 'integrator', 'amount', 'currency', 'payment_date', 'recurrence']
     json_loader =  __validate_json(data, keys)
     if json_loader['status'] == 'error':
         return HttpResponse(json.dumps(json_loader), content_type="application/json", status=http_BAD_REQUEST)
@@ -116,19 +131,19 @@ def create_payment(request):
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
-    # Verifico que el integrador exista
-    try:
-        integrator = Integrator.objects.get(name=data['integrator'])
-    except ObjectDoesNotExist:
-        message = "integrator %s does not exist" % data['integrator']
-        body = {'status': 'error', 'message': message}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
-    
     # Verifico que el pais exista
     try:
         country = Country.objects.get(code=data['country'])
     except ObjectDoesNotExist:
         message = "country %s does not exist" % data['country']
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    # Verifico que el integrador exista
+    try:
+        integrator = Integrator.objects.get(name=data['integrator'], country=country)
+    except ObjectDoesNotExist:
+        message = "integrator %s does not exist for country %s" % (data['integrator'], country.name)
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
 
@@ -156,13 +171,18 @@ def create_payment(request):
     
     # Creo la tarjeta si no existe con el metodo del integrador
     if integrator.method == 'TO':
-        try:
-            card = Card.objects.get(user=user, token=data['token'], integrator=integrator)
-            if not card.enabled:
-                card.enable()
-        except ObjectDoesNotExist:
-            card = Card.create_with_token(user=user, token=data['token'], integrator=integrator)
-    
+        card = __get_card(user, data['token'])
+        if card is not None:
+            card.enable()
+        else:
+            # Creo la nueva tarjeta
+            try:
+                card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], integrator)
+            except Exception:
+                message = "new card could not be created"
+                body    = {'status': 'error', 'message': message}
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
     # Creo un nuevo pago recurrente.
     try:
         # Revisar si tiene o no descuento.
@@ -180,19 +200,74 @@ def create_payment(request):
             up = UserPayment.create(user, 
                                     data['amount'], 
                                     currency, 
-                                    data['payment_date'], 
+                                    data['payment_date'],
                                     payday, 
                                     data['recurrence'])
-    except:
-        message = "could not create user payment"
+    except Exception as e:
+        message = "could not create user payment: (%s)" % str(e)
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
         
     
     # Realizar el pago
-    
-    # Loguear en PaymentHistory
-    
+    if data['payment_date'] == 0 or data['payment_date'] == '0' or data['payment_date'] == 0.0:
+        if integrator.name == 'paymentez':
+            try:
+                gw = PaymentezGateway(IntegratorSetting.get_var(integrator,'paymentez_server_application_code'),
+                                      IntegratorSetting.get_var(integrator,'paymentez_server_app_key'),
+                                      IntegratorSetting.get_var(integrator,'paymentez_endpoint'))
+            except Exception as e:
+                message = "could not create user payment: (%s)" % str(e)
+                body = {'status': 'error', 'message': message}
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+            # Aplico descuento si corresponde
+            disc_flag = False
+            if up.disc_counter > 0:
+                disc_flag = True
+                amount   = up.calculate_discount()
+                disc_pct = up.disc_pct
+            else:
+                amount   = up.amount
+                disc_pct = 0
+
+            # Genero tx id sumando al userid el timestamp
+            payment_id = "PH_%s_%d" % (user.user_id, int(time()))
+
+            # Creo el registro en PaymentHistory
+            ph = PaymentHistory.create(up, card, payment_id, amount, disc_pct)
+
+            try:
+                ret, content = gw.doPost(PaymentezTx(user.user_id,user.email,ph.amount,'HotGo',ph.payment_id,ph.taxable_amount,ph.vat_amount,card.token))
+            except Excepcion as e:
+                pass
+                # Definir con SC que hacemos en caso de error de comunicacion al momento del pago. 
+                # Se activa el UserPayment? Se activa la recurrencia? Que se le notifica al usuario?
+                body = {'status': 'error', 'message': e}
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+            if ret:
+                # Fija la fecha de expiration del usuario
+                user.add_to_expiration(int(data['recurrence']))
+                # Lo pone activo
+                up.status = 'AC'
+                if disc_flag:
+                    up.disc_counter = up.disc_counter - 1
+                up.save()
+                # Apruebo el Payment
+                ph.approve(content['transaction']['id'])
+            else:
+                message = 'type: %s, help: %s, description: %s' % (content['error']['type'],content['error']['help'],content['error']['description'])
+                up.reply_error(message)
+                ph.error(message)
+                body = {'status': 'error', 'message': message}
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
+        else:
+            message = "could not create user payment: (Unknown Integrator: %s)" % str(integrator.name)
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+
     return HttpResponse(status=http_POST_OK)
     
     
@@ -301,7 +376,7 @@ def cancel_payment(request):
         
     # Cancelo la recurrencia
     try:
-        up.disable()
+        up.cancel()
     except:
         message = "could not disable recurring payment"
         body = {'status': 'error', 'message': message}
@@ -314,7 +389,7 @@ def cancel_payment(request):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                                         Cambiar de tarjeta con token                                       #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# JSON - Mandatorios: user_id, token, integrator                                                             #
+# JSON - Mandatorios: user_id, token, card_number, card_exp, integrator                                                             #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 @require_http_methods(["POST"])
 def change_token_card(request):
@@ -332,7 +407,7 @@ def change_token_card(request):
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico las key mandatorios del json    
-    keys = ['user_id', 'token', 'integrator']
+    keys = ['user_id', 'token', 'card_number', 'integrator']
     json_loader =  __validate_json(data, keys)
     if json_loader['status'] == 'error':
         return HttpResponse(json.dumps(json_loader), content_type="application/json", status=http_BAD_REQUEST)
@@ -359,14 +434,19 @@ def change_token_card(request):
         card.disable()
     except ObjectDoesNotExist:
         pass
-        
-    # Creo la nueva tarjeta
-    try:
-        card = Card.create_with_token(user, data['token'], integrator)
-    except:
-        message = "new card coult not be created"
-        body = {'status': 'error', 'message': message}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+    # Verifico si la tarjeta ya fue cargada y la habilito.
+    card = __get_card(user, data['token'])
+    if card is not None:
+        card.enable()
+    else:
+        # Creo la nueva tarjeta
+        try:
+            card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], integrator)
+        except Exception:
+            message = "new card could not be created"
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
     
     # Loguear en PaymentHistory la carga del nuevo pago recurrente
     
@@ -400,11 +480,17 @@ def user_status(request, user_id):
     try:
         up = UserPayment.objects.get(user=user, enabled=True)
     except ObjectDoesNotExist:
-        ret['status'] = 'disabled'
+        ret['status'] = 'N'
         body = {'status': 'success', 'value': ret}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
     
-    ret['status']       = 'enabled'
+    if up.status == 'ER':
+        ret['status']   = 'E'
+        ret['message']  = up.message
+    else:
+        ret['status']   = 'A'
+        ret['message']  = ''
+ 
     ret['recurrence']   = up.recurrence
     ret['payment_date'] = mktime(up.payment_date.timetuple())
     ret['currency']     = up.currency.code
@@ -452,7 +538,9 @@ def get_cards(request, user_id):
         
     body = {'status': 'success', 'value': value}
     return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
-        
+
+
+ 
         
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                                Devuelve JSON con la tarjeta activa del usuario                             #
