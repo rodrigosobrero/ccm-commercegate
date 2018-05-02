@@ -96,12 +96,13 @@ def __get_card(user, token):
     except:
         return None
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#                                Creacion de nuevo pago recurrente                                                                  #
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# JSON - Mandatorios: user_id, email, country, token, card_number, card_exp, integrator, amount, currency, payment_date, recurrence #
-# JSON - Opcionales: discount, disc_counter                                                                                         #
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                Creacion de nuevo pago recurrente                      #
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# JSON - Mandatorios: user_id, email, country, token, card_number, card_exp, card_type, #
+#                     integrator, amount, currency, payment_date, recurrence            #
+# JSON - Opcionales: discount, disc_counter                                             #
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 @require_http_methods(["POST"])
 def create_payment(request):
     # Verifico ApiKey
@@ -112,15 +113,19 @@ def create_payment(request):
     # Cargo el json
     try:
         data = json.loads(request.body)
+        print "CONTENT MA: %s" % data
     except Exception:
         message = "error decoding json"
         body = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico las key mandatorios del json    
-    keys = ['user_id', 'email', 'country', 'token', 'card_number', 'integrator', 'amount', 'currency', 'payment_date', 'recurrence']
+    keys = ['user_id', 'email', 'country', 'token', 'card_number', 'card_exp','card_type',
+            'integrator', 'amount', 'currency', 'payment_date', 'recurrence']
     json_loader =  __validate_json(data, keys)
     if json_loader['status'] == 'error':
+        print json_loader
         return HttpResponse(json.dumps(json_loader), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico que la currency exista
@@ -129,6 +134,7 @@ def create_payment(request):
     except ObjectDoesNotExist:
         message = "currency %s does not exist" % data['currency']
         body = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico que el pais exista
@@ -137,6 +143,7 @@ def create_payment(request):
     except ObjectDoesNotExist:
         message = "country %s does not exist" % data['country']
         body = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
 
     # Verifico que el integrador exista
@@ -145,6 +152,7 @@ def create_payment(request):
     except ObjectDoesNotExist:
         message = "integrator %s does not exist for country %s" % (data['integrator'], country.name)
         body = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
 
     # Verifico si el usuario existe y sino lo creo
@@ -154,13 +162,11 @@ def create_payment(request):
         user = User.create(data['user_id'], data['email'], country)
     
     # Si tiene algun UserPayment habilitado devuelvo un error
-    try:
-        up      = UserPayment.objects.get(user=user, enabled=True)
+    if UserPayment.objects.filter(user=user, enabled=True).exists():
         message = "enabled user payment already exists" 
         body    = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
-    except ObjectDoesNotExist:
-        pass
     
     # Desabilito cualquier otra tarjeta del usuario
     try:
@@ -177,10 +183,11 @@ def create_payment(request):
         else:
             # Creo la nueva tarjeta
             try:
-                card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], integrator)
+                card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], data['card_type'], integrator)
             except Exception:
                 message = "new card could not be created"
                 body    = {'status': 'error', 'message': message}
+                print message
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
     # Creo un nuevo pago recurrente.
@@ -206,6 +213,7 @@ def create_payment(request):
     except Exception as e:
         message = "could not create user payment: (%s)" % str(e)
         body = {'status': 'error', 'message': message}
+        print message
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
         
     
@@ -219,6 +227,7 @@ def create_payment(request):
             except Exception as e:
                 message = "could not create user payment: (%s)" % str(e)
                 body = {'status': 'error', 'message': message}
+                print message
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
             # Aplico descuento si corresponde
@@ -244,6 +253,7 @@ def create_payment(request):
                 # Definir con SC que hacemos en caso de error de comunicacion al momento del pago. 
                 # Se activa el UserPayment? Se activa la recurrencia? Que se le notifica al usuario?
                 body = {'status': 'error', 'message': e}
+                print e
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
             if ret:
@@ -261,13 +271,15 @@ def create_payment(request):
                 up.reply_error(message)
                 ph.error(message)
                 body = {'status': 'error', 'message': message}
+                print message
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
         else:
             message = "could not create user payment: (Unknown Integrator: %s)" % str(integrator.name)
             body = {'status': 'error', 'message': message}
+            print message
             return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
-
+    print "OK"
     return HttpResponse(status=http_POST_OK)
     
     
@@ -389,7 +401,7 @@ def cancel_payment(request):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                                         Cambiar de tarjeta con token                                       #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# JSON - Mandatorios: user_id, token, card_number, card_exp, integrator                                                             #
+# JSON - Mandatorios: user_id, token, card_number, card_exp, card_type, integrator                           #
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
 @require_http_methods(["POST"])
 def change_token_card(request):
@@ -407,7 +419,7 @@ def change_token_card(request):
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
     
     # Verifico las key mandatorios del json    
-    keys = ['user_id', 'token', 'card_number', 'integrator']
+    keys = ['user_id', 'token', 'card_number', 'card_type', 'integrator']
     json_loader =  __validate_json(data, keys)
     if json_loader['status'] == 'error':
         return HttpResponse(json.dumps(json_loader), content_type="application/json", status=http_BAD_REQUEST)
@@ -442,7 +454,7 @@ def change_token_card(request):
     else:
         # Creo la nueva tarjeta
         try:
-            card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], integrator)
+            card = Card.create_with_token(user, data['token'], data['card_number'], data['card_exp'], data['card_type'], integrator)
         except Exception:
             message = "new card could not be created"
             body = {'status': 'error', 'message': message}
@@ -532,6 +544,7 @@ def get_cards(request, user_id):
         ret['name']       = card.name
         ret['expiration'] = card.expiration
         ret['cvc']        = card.cvc
+        ret['card_type']  = card.card_type
         ret['integrator'] = card.integrator.name
         ret['enabled']    = card.enabled
         value.append(ret)
@@ -576,6 +589,7 @@ def get_enabled_card(request, user_id):
     ret['name']       = card.name
     ret['expiration'] = card.expiration
     ret['cvc']        = card.cvc
+    ret['card_type']  = card.card_type
     ret['integrator'] = card.integrator.name
     ret['enabled']    = card.enabled
         

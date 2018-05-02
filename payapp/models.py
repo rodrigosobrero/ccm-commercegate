@@ -255,13 +255,14 @@ class Card(models.Model):
         return self.card_id
     
     @classmethod
-    def create_with_token(cls, user, token, number, expiration, integrator):
+    def create_with_token(cls, user, token, number, expiration, card_type, integrator):
         cd            = cls()
         cd.card_id    = "CD_%s_%d" % (user.user_id, int(time.time()))
         cd.user       = user
         cd.token      = token
         cd.number     = number
         cd.expiration = expiration
+        cd.card_type  = card_type
         cd.integrator = integrator
         cd.enabled    = True
         cd.save()
@@ -305,11 +306,11 @@ class PaymentHistory(models.Model):
             if self.user_payment.user.country.full_price:
                 amount         = self.user_payment.amount
                 taxable_amount = round(amount / tax, 2)
-                vat_amount     = amount - taxable_amount
+                vat_amount     = round(amount - taxable_amount, 2)
             else:
                 taxable_amount = self.user_payment.amount
-                amount         = taxable_amount * tax
-                vat_amount     = amount - taxable_amount
+                amount         = round(taxable_amount * tax, 2)
+                vat_amount     = round(amount - taxable_amount, 2)
         else:
             amount         = self.user_payment.amount
             taxable_amount = 0
