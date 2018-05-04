@@ -8,6 +8,7 @@ from json     import loads
 import urlparse
 import socket
 
+
 '''
     order.description              Result
     Approved transaction           status = success, status_detail = 3
@@ -75,6 +76,3 @@ class PaymentezTx(object):
 
     def to_str(self):
         return dumps(self.serialize())
-
-
-

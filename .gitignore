@@ -105,3 +105,6 @@ payapp/migrations/
 *.pyc
 db.sqlite3
 settings.py
+pid/
+log/
+

@@ -17,11 +17,21 @@ from payapp.models import Setting
 from payapp.models import UserPayment
 from payapp.models import Card
 from payapp.models import IntegratorSetting
+from payapp.models import PaymentHistory
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Misc
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import json
+from datetime import datetime
+from time import mktime
+from time import time
 
-from paymentez import PaymentezGateway
-from paymentez import PaymentezTx
+from payapp.paymentez import PaymentezGateway
+from payapp.paymentez import PaymentezTx
+from payapp.misc import paymentez_translator
 
+from payapp.intercom import Intercom
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # System
@@ -58,12 +68,12 @@ def get_card(user):
     try:
         card = Card.objects.get(user=user, enabled=True)
     except ObjectDoesNotExist:
-        msg = "User %s has not card enabled" % payment.user.user_id
-        loggin.error("get_card(): %s" % msg)
+        msg = "User %s has not card enabled" % user.user_id
+        logging.error("get_card(): %s" % msg)
         return None
     except MultipleObjectsReturned:
-        msg = "User %s has multiple cards enabled" % payment.user.user_id
-        loggin.error("get_card(): %s" % msg)
+        msg = "User %s has multiple cards enabled" % user.user_id
+        logging.error("get_card(): %s" % msg)
         return None
 
     return card
@@ -71,14 +81,14 @@ def get_card(user):
 
 def paymentez_payment(up, card):
     try:
-        gw = PaymentezGateway(IntegratorSetting.get_var(integrator,'paymentez_server_application_code'),
-                              IntegratorSetting.get_var(integrator,'paymentez_server_app_key'),
-                              IntegratorSetting.get_var(integrator,'paymentez_endpoint'))
+        gw = PaymentezGateway(IntegratorSetting.get_var(card.integrator,'paymentez_server_application_code'),
+                              IntegratorSetting.get_var(card.integrator,'paymentez_server_app_key'),
+                              IntegratorSetting.get_var(card.integrator,'paymentez_endpoint'))
     except Exception as e:
         msg = "could not create user payment: (%s)" % str(e)
         up.error(msg)
         logging.error("paymentez_payment(): %s" % msg)
-        return None
+        return False
 
     # Aplico descuento si corresponde
     disc_flag = False
@@ -92,7 +102,7 @@ def paymentez_payment(up, card):
         disc_pct = 0
 
     # Genero tx id sumando al userid el timestamp
-    payment_id = "PH_%s_%d" % (user.user_id, int(time()))
+    payment_id = "PH_%s_%d" % (up.user.user_id, int(time.time()))
 
     # Creo el registro en PaymentHistory
     ph = PaymentHistory.create(up, card, payment_id, amount, disc_pct)
@@ -101,39 +111,79 @@ def paymentez_payment(up, card):
 
     # Realizo el pago
     try:
-        logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - amount: %s - card: %s - payment_id: %s" % (up.user.user_id, up.user.email, amount, card.token, ph.payment_id))
-        ret, content = gw.doPost(PaymentezTx(user.user_id,user.email,ph.amount,'HotGo',ph.payment_id,ph.taxable_amount,ph.vat_amount,card.token))
-    except Excepcion as e:
-        pass
-        # Definir con SC que hacemos en caso de error de comunicacion al momento del pago.
-        # Se activa el UserPayment? Se activa la recurrencia? Que se le notifica al usuario?
-        return None
+        logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - amount: %s - "
+                     "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, amount, card.token, ph.payment_id))
+        ret, content = gw.doPost(PaymentezTx(up.user.user_id, up.user.email, ph.amount, 'HotGo',
+                                             ph.payment_id, ph.taxable_amount, ph.vat_amount, card.token))
+    except Exception as e:
+        logging.info("paymentez_payment(): Communication error. New PaymentHistory status: Waiting Callback")
+        # Pongo el pago en Waiting Callback
+        ph.status = "W"
+        ph.save()
+        return False
 
     if ret:
-        logging.info("paymentez_payment(): Reply content: %s" % content)
-        # Fija la fecha de expiration del usuario
-        up.user.add_to_expiration(int(data['recurrence']))
-        # Lo pone activo
-        up.status = 'AC'
-        if disc_flag:
-            up.disc_counter = up.disc_counter - 1
-        up.save()
-        ph.approve(content['transaction']['id'])
-        logging.info("paymentez_payment(): Payment executed successfully. Next payment date: %s" % up.payment_date)
-    else:
-        message = 'type: %s, help: %s, description: %s' % (content['error']['type'],content['error']['help'],content['error']['description'])
-        up.reply_error(message)
-        ph.error(message)
-        logging.error("paymentez_payment(): Payment error: %s" % message)
-        return None
+        # Obtengo los valores segun la respuesta de Paymentez
+        pr = paymentez_translator(content)
+        # Seteo los valores de la UserPayment
+        logging.info("paymentez_payment(): Setting UserPayment values: status: %s - enabled: %s - message: %s"
+                     % (pr["up_status"], str(pr["up_recurrence"]), pr["up_recurrence"]))
+        up.status  = pr["up_status"]
+        up.message = pr["up_message"]
+        up.enabled = pr["up_recurrence"]
+        # calcular next_payment_day
 
-        return up
+        if up.status == 'AC':
+            if disc_flag:
+                up.disc_counter = up.disc_counter - 1
+        else:
+            up.channel = 'R'
+        up.save()
+
+        # Seteo los valores del PaymentHistory
+        logging.info("paymentez_payment(): Setting PaymentHistory values: status: %s - gateway_id: %s - message: %s"
+                     % (pr["ph_status"], pr["ph_gatewayid"], pr["ph_message"]))
+        ph.status = pr["ph_status"]
+        ph.gateway_id = pr["ph_gatewayid"]
+        ph.message = pr["ph_message"]
+        ph.save()
+
+        if pr["user_expire"]:
+            logging.info("paymentez_payment(): Disabling user access to %s" % up.user.user_id)
+            up.user.expire()
+        else:
+            # Fija la fecha de expiration del usuario
+            logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
+            up.user.add_to_expiration(up.recurrence)
+
+        if pr["intercom"]["action"]:
+            logging.info("paymentez_payment(): Sending event to Intercom: %s" % pr["intercom"]["event"])
+            ep = Setting.get_var('intercom_endpoint')
+            token = Setting.get_var('intercom_token')
+            try:
+                intercom = Intercom(ep, token)
+                reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"], content)
+                if not reply:
+                    msg = "Intercom error: cannot post the event"
+                    ph.message = "%s - %s" % (ph.message, msg)
+                    logging.info("paymentez_payment(): %s" % msg)
+                    ph.save()
+            except Exception as e:
+                msg = "Intercom error: %s" % str(e)
+                ph.message = "%s - %s" % (ph.message, msg)
+                logging.info("paymentez_payment(): %s" % msg)
+                ph.save()
+
+        logging.info("paymentez_payment(): Payment executed succesfully - UserPayment: %s" % up.user_payment_id)
+
+        return True
 
 
 def make_payment(up, card):
     if card.integrator.name == 'paymentez':
         ret = paymentez_payment(up, card)
-
+    else:
+        ret = False
     return ret
 
 
@@ -147,19 +197,16 @@ def payd_main():
         exit(2)
 
     while True:
-        # Obtengo todos los UserPayments activos y habilitados con payment date vencido.
+        # Obtengo todos los UserPayments activos y habilitados con payment_date vencido.
         logging.info("payd_main(): Getting active UserPayemnts to pay...")
         payments = UserPayment.objects.filter(status='AC', enabled=True, payment_date__lte=timezone.now())
         for up in payments:
-            # Cambio a Pending todos los pagos pendientes de cobro.
+            print "hola"
+            # Cambio a Pending.
             up.status = 'PE'
             up.save()
-            logging.info("payd_main(): UserPayment %s new status... Pending" % up.user.user_id)
+            logging.info("payd_main(): UserPayment %s new status... Pending" % up.user_payment_id)
 
-        # Obtengo todos los UserPayments en pending
-        logging.info("payd_main(): Getting pending UserPayemnts...")
-        payments = UserPayment.objects.filter(status='PE')
-        for up in payments:
             # Obtengo la tarjeta habilitada para el usuario
             card = get_card(up.user)
             if card is None:

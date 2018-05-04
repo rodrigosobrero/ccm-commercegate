@@ -4,9 +4,10 @@ from django.db import models
 from datetime import datetime
 from datetime import timedelta
 from django.utils import timezone
-from django.core.exceptions import *
+from django.core.exceptions import ObjectDoesNotExist
 import time
 # Create your models here.
+
 
 class Setting(models.Model):
     TYPES = (('I', 'Integer'),
@@ -129,6 +130,10 @@ class User(models.Model):
         self.expiration = timezone.now() + timezone.timedelta(days=days)
         self.save()
 
+    def expire(self):
+        self.expiration = timezone.now()
+        self.save()
+
     def has_expired(self):
         if self.expiration < timezone.now():
             return True
@@ -155,7 +160,7 @@ class UserPayment(models.Model):
     currency          = models.ForeignKey(Currency)
     payment_date      = models.DateField(auto_now_add=False, help_text='Next payment date')
     payday            = models.IntegerField(help_text='Payday number')
-    recurrence        = models.IntegerField(help_text="Monthly recurrence")
+    recurrence        = models.IntegerField(help_text="Daily recurrence")
     disc_pct          = models.IntegerField(default=0, help_text="Discount percentage")
     disc_counter      = models.IntegerField(default=0, help_text="Payments with discount remaining")
     status            = models.CharField(max_length=2, choices=STATUS, default='PE', help_text='Payment status')
@@ -201,9 +206,21 @@ class UserPayment(models.Model):
     def disable(self):
         self.enabled = False
         self.save()
+
+    def active(self):
+        self.status  = 'AC'
+        self.enabled = True
+        self.save()
     
     def enable(self):
         self.enabled = True
+        self.save()
+
+    def error(self, channel, message=''):
+        self.status = 'ER'
+        self.message = message
+        self.enabled = False
+        self.channel = channel
         self.save()
     
     def reply_error(self, message=''):
@@ -227,14 +244,28 @@ class UserPayment(models.Model):
         self.channel = 'T'
         self.save()
 
-    def cancel(self):
+    def cancel(self, channel, message=''):
+        self.status  = 'CA'
+        self.message = message
+        self.enabled = False
+        self.channel = channel
+        self.save()
+
+    def reply_cancel(self, message=''):
+        self.status  = 'CA'
+        self.message = message
+        self.enabled = False
+        self.channel = 'R'
+        self.save()
+
+    def user_cancel(self):
         self.enabled = False
         self.status  = 'CA'
         self.channel = 'U'
         self.save()
 
     def calculate_discount(self):
-        return  self.amount - (self.amount * self.disc_pct / 100)
+        return self.amount - (self.amount * self.disc_pct / 100)
 
 
 class Card(models.Model):
@@ -281,6 +312,7 @@ class PaymentHistory(models.Model):
               ('W', 'Waiting callback'),
               ('A', 'Approved'),
               ('R', 'Rejected'),
+              ('C', 'Cancelled'),
               ('E', 'Error'))
 
     user_payment      = models.ForeignKey(UserPayment)
@@ -292,7 +324,7 @@ class PaymentHistory(models.Model):
     vat_amount        = models.FloatField(default=0, help_text='Tax amount')
     taxable_amount    = models.FloatField(default=0, help_text='Net amount')
     disc_pct          = models.IntegerField(default=0, help_text="Discount percentage")
-    message           = models.CharField(max_length=512, blank=True)
+    message           = models.CharField(max_length=2048, blank=True)
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -336,19 +368,28 @@ class PaymentHistory(models.Model):
         ph.save()
         return ph
 
-    def approve(self, gw_id=''):
+    def approve(self, gw_id, message=''):
         self.status     = 'A'
         self.gateway_id = gw_id
+        self.message    = message
         self.save()
 
-    def reject(self, message=''):
-        self.status  = 'R'
-        self.message = message
+    def reject(self, gw_id, message=''):
+        self.status     = 'R'
+        self.gateway_id = gw_id
+        self.message    = message
         self.save()
 
-    def error(self, message=''):
-        self.status  = 'E'
-        self.message = message
+    def error(self, gw_id, message=''):
+        self.status     = 'E'
+        self.gateway_id = gw_id
+        self.message    = message
+        self.save()
+
+    def cancel(self, gw_id, message=''):
+        self.status     = 'C'
+        self.gateway_id = gw_id
+        self.message    = message
         self.save()
 
     def __unicode__(self):
