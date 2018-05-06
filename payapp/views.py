@@ -161,7 +161,9 @@ def create_payment(request):
 
     # Verifico si el usuario existe y sino lo creo
     try:
-        user = User.objects.get(user_id=data['user_id'])
+        user       = User.objects.get(user_id=data['user_id'])
+        user.email = data['email']
+        user.save()
     except ObjectDoesNotExist:
         user = User.create(data['user_id'], data['email'], country)
     
@@ -378,7 +380,7 @@ def payment_discount(request):
         message = "discount already active"
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
-        
+
     # Aplico el descuento
     try:
         up.discount(data['discount'], data['disc_counter'])
@@ -513,6 +515,45 @@ def change_token_card(request):
     
     return HttpResponse(status=http_POST_OK)
 
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                         Modificar email del usuario                                        #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# JSON - Mandatorios: user_id, email                                                                         #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+@require_http_methods(["POST"])
+def change_user_email(request):
+    # Verifico ApiKey
+    cap = __check_apikey(request)
+    if cap['status'] == 'error':
+        return HttpResponse(status=http_UNAUTHORIZED)
+
+    # Cargo el json
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        message = "error decoding json"
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    # Verifico las key mandatorios del json
+    keys = ['user_id', 'email']
+    json_loader = __validate_json(data, keys)
+    if json_loader['status'] == 'error':
+        return HttpResponse(json.dumps(json_loader), content_type="application/json", status=http_BAD_REQUEST)
+
+    # Verifico que el usuario exista
+    try:
+        user = User.objects.get(user_id=data['user_id'])
+    except ObjectDoesNotExist:
+        message = "user_id %s does not exist" % data['user_id']
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    user.email = data['email']
+    user.save()
+
+    return HttpResponse(status=http_POST_OK)
     
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                        Devuelve JSON con el estado de la suscripcion del usuario                           #
