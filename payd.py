@@ -131,9 +131,13 @@ def paymentez_payment(up, card):
         up.status  = pr["up_status"]
         up.message = pr["up_message"]
         up.enabled = pr["up_recurrence"]
-        # calcular next_payment_day
 
         if up.status == 'AC':
+            # calcular next_payment_day
+            up.payment_date = up.calc_payment_date()
+            # Fija la fecha de expiration del usuario
+            logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
+            up.user.add_to_expiration(up.recurrence)
             if disc_flag:
                 up.disc_counter = up.disc_counter - 1
         else:
@@ -151,10 +155,6 @@ def paymentez_payment(up, card):
         if pr["user_expire"]:
             logging.info("paymentez_payment(): Disabling user access to %s" % up.user.user_id)
             up.user.expire()
-        else:
-            # Fija la fecha de expiration del usuario
-            logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
-            up.user.add_to_expiration(up.recurrence)
 
         if pr["intercom"]["action"]:
             logging.info("paymentez_payment(): Sending event to Intercom: %s" % pr["intercom"]["event"])

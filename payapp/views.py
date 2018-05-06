@@ -275,9 +275,12 @@ def create_payment(request):
                 up.status  = pr["up_status"]
                 up.message = pr["up_message"]
                 up.enabled = pr["up_recurrence"]
-                # calcular next_payment_day
 
                 if up.status == 'AC':
+                    # calcular next_payment_day
+                    up.payment_date = up.calc_payment_date()
+                    # Fija la fecha de expiration del usuario
+                    user.add_to_expiration(int(data['recurrence']))
                     if disc_flag:
                         up.disc_counter = up.disc_counter - 1
                 else:
@@ -292,9 +295,6 @@ def create_payment(request):
 
                 if pr["user_expire"]:
                     user.expire()
-                else:
-                    # Fija la fecha de expiration del usuario
-                    user.add_to_expiration(int(data['recurrence']))
 
                 if pr["intercom"]["action"]:
                     ep    = Setting.get_var('intercom_endpoint')
@@ -480,7 +480,7 @@ def change_token_card(request):
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
         
-     # Verifico que el integrador exista
+    # Verifico que el integrador exista
     try:
         integrator = Integrator.objects.get(name=data['integrator'])
     except ObjectDoesNotExist:
@@ -644,3 +644,6 @@ def get_enabled_card(request, user_id):
         
     body = {'status': 'success', 'value': ret}
     return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
+
+
+

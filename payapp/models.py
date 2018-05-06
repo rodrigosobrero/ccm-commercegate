@@ -110,7 +110,7 @@ class User(models.Model):
     user_id           = models.CharField(max_length=128)
     email             = models.CharField(max_length=128)
     country           = models.ForeignKey(Country)
-    expiration        = models.DateTimeField(auto_now_add=True)
+    expiration        = models.DateField(help_text="Expiration date")
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -119,16 +119,31 @@ class User(models.Model):
         
     @classmethod
     def create(cls, user_id, email, country):
-        us         = cls()
-        us.user_id = user_id
-        us.email   = email
-        us.country = country        
+        us            = cls()
+        us.user_id    = user_id
+        us.email      = email
+        us.country    = country
+        us.expiration = timezone.now()
         us.save()
         return us
     
     def add_to_expiration(self, days):
-        self.expiration = timezone.now() + timezone.timedelta(days=days)
+        ty, tm, td = timezone.now().strftime("%Y-%m-%d").split("-")
+        # Obtengo cantidad de meses a sumar
+        md = int(days / 30)
+        # Sumo los meses
+        m = int(tm) + md
+        # Obtengo el mes resultante y los anios a sumar
+        yd, month = divmod(m, 12)
+        if month == 0:
+            month = m - 12 * (yd - 1)
+            year = int(ty) + yd - 1
+        else:
+            year = int(ty) + yd
+        # Sumo los anio
+        self.expiration = datetime(year, month, int(td))
         self.save()
+        return self.expiration
 
     def expire(self):
         self.expiration = timezone.now()
@@ -181,11 +196,12 @@ class UserPayment(models.Model):
         up.amount          = float(amount)
         up.currency        = currency
         if payment_date == 0 or payment_date == 0.0 or payment_date == '0':
-            np = timezone.now() + timezone.timedelta(days=int(recurrence))
-            if int(recurrence) >= 30:
-                up.payment_date = datetime(np.year,np.month,payday)
-            else:
-                up.payment_date = datetime(np.year,np.month,np.day)
+            #np = timezone.now() + timezone.timedelta(days=int(recurrence))
+            #if int(recurrence) >= 30:
+            #    up.payment_date = datetime(np.year,np.month,payday)
+            #else:
+            #    up.payment_date = datetime(np.year,np.month,np.day)
+            up.payment_date = timezone.now()
             up.status       = 'PE'
         else:
             up.payment_date = datetime.fromtimestamp(int(payment_date))
@@ -266,6 +282,23 @@ class UserPayment(models.Model):
 
     def calculate_discount(self):
         return self.amount - (self.amount * self.disc_pct / 100)
+
+    def calc_payment_date(self):
+        # Obtengo cantidad de meses a sumar
+        md = int(int(self.recurrence) / 30)
+        # Sumo los meses
+        m = self.payment_date.month + md
+        # Obtengo el mes resultante y los anios a sumar
+        yd, month = divmod(m, 12)
+        if month == 0:
+            month = m - 12 * (yd - 1)
+            year = self.payment_date.year + yd - 1
+        else:
+            year = self.payment_date.year + yd
+        # Sumo los anio
+        self.payment_date = datetime(year, month, int(self.payday))
+        #self.save()
+        return self.payment_date
 
 
 class Card(models.Model):

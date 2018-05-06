@@ -37,4 +37,5 @@ class CardAdmin(admin.ModelAdmin):
 
 @admin.register(models.PaymentHistory)
 class PaymentHistoryAdmin(admin.ModelAdmin):
-    list_display = ['payment_id', 'user_payment', 'status', 'card', 'gateway_id', 'amount', 'taxable_amount', 'vat_amount']
+    list_display = ['payment_id', 'user_payment', 'status', 'card', 'gateway_id', 'amount',
+                    'taxable_amount', 'vat_amount', 'creation_date', 'modification_date']
