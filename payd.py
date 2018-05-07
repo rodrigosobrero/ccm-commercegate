@@ -201,21 +201,23 @@ def payd_main():
         # Obtengo todos los UserPayments activos y habilitados con payment_date vencido.
         logging.info("payd_main(): Getting active UserPayemnts to pay...")
         payments = UserPayment.objects.filter(status='AC', enabled=True, payment_date__lte=timezone.now())
+        ips = Setting.get_var("payment_slot")
         for up in payments:
-            print "hola"
-            # Cambio a Pending.
-            up.status = 'PE'
-            up.save()
-            logging.info("payd_main(): UserPayment %s new status... Pending" % up.user_payment_id)
+            if ips > 0:
+                # Cambio a Pending.
+                up.status = 'PE'
+                up.save()
+                logging.info("payd_main(): UserPayment %s new status... Pending" % up.user_payment_id)
 
-            # Obtengo la tarjeta habilitada para el usuario
-            card = get_card(up.user)
-            if card is None:
-                msg = "Error getting card for user %s" % up.user.user_id
-                up.error(msg)
-                continue
+                # Obtengo la tarjeta habilitada para el usuario
+                card = get_card(up.user)
+                if card is None:
+                    msg = "Error getting card for user %s" % up.user.user_id
+                    up.error(msg)
+                    continue
 
-            make_payment(up, card)
+                make_payment(up, card)
+                ips = ips - 1
 
         time.sleep(settings['sleep_time_daemon'])
 
