@@ -127,7 +127,7 @@ def __callback_paymentez_ecuador(data):
             try:
                 intercom = Intercom(ep, token)
                 reply = intercom.submitEvent(ph.user_payment.user.user_id, ph.user_payment.user.email,
-                                             pr["intercom"]["event"], data)
+                                             pr["intercom"]["event"], {"paymentez": data})
                 if not reply:
                     ph.message = "%s - Intercom error: cannot post the event" % (ph.message)
                     ph.save()
