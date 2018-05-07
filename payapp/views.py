@@ -295,6 +295,11 @@ def create_payment(request):
                 ph.message    = pr["ph_message"]
                 ph.save()
 
+                if ph.status == 'A':
+                    rep_status = "success"
+                else:
+                    rep_status = "error"
+
                 if pr["user_expire"]:
                     user.expire()
 
@@ -312,7 +317,7 @@ def create_payment(request):
                         ph.message = "%s - Intercom error: %s" % (ph.message, str(e))
                         ph.save()
 
-                body = {'status': 'success', 'message': '', 'user_message': pr['user_message']}
+                body = {'status': rep_status, 'message': '', 'user_message': pr['user_message']}
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_POST_OK)
 
             else:
