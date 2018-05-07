@@ -222,7 +222,7 @@ def payd_main():
                 logging.info("payd_main(): Payment slot limit reached. Next execution in %s seconds"
                              % str(settings['sleep_time_daemon']))
 
-                time.sleep(settings['sleep_time_daemon'])
+        time.sleep(settings['sleep_time_daemon'])
 
 
 class DaemonMain(Daemon):
