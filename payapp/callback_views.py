@@ -70,7 +70,8 @@ def __validate_stoken(data, country):
     app_key  = IntegratorSetting.get_var(integrator, 'paymentez_server_app_key')
 
     string = "%s_%s_%s_%s" % (tx_id, app_code, user_id, app_key)
-    if stoken == hashlib.md5(string).hexdigest():
+    print hashlib.md5(string).hexdigest()
+    if stoken.lower() == hashlib.md5(string).hexdigest():
         return True
     else:
         return False
