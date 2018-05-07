@@ -218,8 +218,11 @@ def payd_main():
 
                 make_payment(up, card)
                 ips = ips - 1
+            else:
+                logging.info("payd_main(): Payment slot limit reached. Next execution in %s seconds"
+                             % str(settings['sleep_time_daemon']))
 
-        time.sleep(settings['sleep_time_daemon'])
+                time.sleep(settings['sleep_time_daemon'])
 
 
 class DaemonMain(Daemon):
