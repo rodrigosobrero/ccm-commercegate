@@ -162,7 +162,8 @@ def paymentez_payment(up, card):
             token = Setting.get_var('intercom_token')
             try:
                 intercom = Intercom(ep, token)
-                reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"], content)
+                reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
+                                             {"paymentez": content})
                 if not reply:
                     msg = "Intercom error: cannot post the event"
                     ph.message = "%s - %s" % (ph.message, msg)

@@ -303,7 +303,8 @@ def create_payment(request):
                     token = Setting.get_var('intercom_token')
                     try:
                         intercom = Intercom(ep, token)
-                        reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"], content)
+                        reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
+                                                     {"paymentez": content})
                         if not reply:
                             ph.message = "%s - Intercom error: cannot post the event" % (ph.message)
                             ph.save()
@@ -389,8 +390,6 @@ def payment_discount(request):
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
     
-    # Loguear en PaymentHistory
-    
     return HttpResponse(status=http_POST_OK)
         
         
@@ -443,8 +442,20 @@ def cancel_payment(request):
         message = "could not disable recurring payment"
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
-    
-    # Loguear en PaymentHistory
+
+    # Envio envento a intercom
+    ep    = Setting.get_var('intercom_endpoint')
+    token = Setting.get_var('intercom_token')
+    try:
+        intercom = Intercom(ep, token)
+        reply = intercom.submitEvent(up.user.user_id, up.user.email, "cancelled_pay",
+                                     {"paymentez": "recurrencia cancelada por el usuario"})
+        if not reply:
+            up.message = "Intercom error: cannot post the event"
+            up.save()
+    except Exception as e:
+        up.message = "Intercom error: %s" % str(e)
+        up.save()
     
     return HttpResponse(status=http_POST_OK)
 
@@ -510,8 +521,7 @@ def change_token_card(request):
             message = "new card could not be created"
             body = {'status': 'error', 'message': message}
             return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
-    
-    # Loguear en PaymentHistory la carga del nuevo pago recurrente
+
     
     return HttpResponse(status=http_POST_OK)
 
