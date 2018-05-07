@@ -448,7 +448,7 @@ def cancel_payment(request):
     token = Setting.get_var('intercom_token')
     try:
         intercom = Intercom(ep, token)
-        reply = intercom.submitEvent(up.user.user_id, up.user.email, "cancelled_pay",
+        reply = intercom.submitEvent(up.user.user_id, up.user.email, "cancelled-sub",
                                      {"paymentez": "recurrencia cancelada por el usuario"})
         if not reply:
             up.message = "Intercom error: cannot post the event"
