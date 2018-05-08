@@ -269,7 +269,7 @@ def create_payment(request):
                                "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.com"
                 message = "communication error with paymentez, waiting callback"
                 body = {'status': 'error', 'message': message, 'user_message': user_message}
-                return HttpResponse(json.dumps(body), content_type="application/json", status=http_POST_OK)
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
             if ret:
                 # Obtengo los valores segun la respuesta de Paymentez
@@ -591,7 +591,7 @@ def user_status(request, user_id):
         if user.expiration is not None:
             ret['expiration'] = mktime(user.expiration.timetuple())
         else:
-            ret['expiration'] = ''
+            ret['expiration'] = None
     except ObjectDoesNotExist:
         message = "user_id %s does not exist" % user_id
         body = {'status': 'error', 'message': message}
