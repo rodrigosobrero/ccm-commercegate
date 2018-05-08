@@ -30,6 +30,8 @@ from time import mktime
 from time import time
 
 from misc import paymentez_translator
+from misc import paymentez_intercom_metadata
+
 from intercom import Intercom
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -127,7 +129,7 @@ def __callback_paymentez_ecuador(data):
             try:
                 intercom = Intercom(ep, token)
                 reply = intercom.submitEvent(ph.user_payment.user.user_id, ph.user_payment.user.email,
-                                             pr["intercom"]["event"], {"paymentez": data})
+                                             pr["intercom"]["event"], paymentez_intercom_metadata(data['transaction']))
                 if not reply:
                     ph.message = "%s - Intercom error: cannot post the event" % (ph.message)
                     ph.save()

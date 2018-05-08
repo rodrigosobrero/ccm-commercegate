@@ -30,6 +30,7 @@ from time import time
 from payapp.paymentez import PaymentezGateway
 from payapp.paymentez import PaymentezTx
 from payapp.misc import paymentez_translator
+from payapp.misc import paymentez_intercom_metadata
 
 from payapp.intercom import Intercom
 
@@ -163,7 +164,7 @@ def paymentez_payment(up, card):
             try:
                 intercom = Intercom(ep, token)
                 reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
-                                             {"paymentez": content})
+                                             paymentez_intercom_metadata(content['transaction']))
                 if not reply:
                     msg = "Intercom error: cannot post the event"
                     ph.message = "%s - %s" % (ph.message, msg)

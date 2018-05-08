@@ -31,6 +31,7 @@ from time import time
 from paymentez import PaymentezGateway
 from paymentez import PaymentezTx
 from misc import paymentez_translator
+from misc import paymentez_intercom_metadata
 
 from intercom import Intercom
 
@@ -309,7 +310,7 @@ def create_payment(request):
                     try:
                         intercom = Intercom(ep, token)
                         reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
-                                                     {"paymentez": content})
+                                                     paymentez_intercom_metadata(content['transaction']))
                         if not reply:
                             ph.message = "%s - Intercom error: cannot post the event" % (ph.message)
                             ph.save()
@@ -587,7 +588,10 @@ def user_status(request, user_id):
     # Verifico que el usuario exista
     try:
         user = User.objects.get(user_id=user_id)
-        ret['expiration'] = mktime(user.expiration.timetuple())
+        if user.expiration is not None:
+            ret['expiration'] = mktime(user.expiration.timetuple())
+        else:
+            ret['expiration'] = ''
     except ObjectDoesNotExist:
         message = "user_id %s does not exist" % user_id
         body = {'status': 'error', 'message': message}

@@ -110,7 +110,7 @@ class User(models.Model):
     user_id           = models.CharField(max_length=128)
     email             = models.CharField(max_length=128)
     country           = models.ForeignKey(Country)
-    expiration        = models.DateField(help_text="Expiration date")
+    expiration        = models.DateField(blank=True, null=True, help_text="Expiration date")
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -123,7 +123,6 @@ class User(models.Model):
         us.user_id    = user_id
         us.email      = email
         us.country    = country
-        us.expiration = timezone.now()
         us.save()
         return us
     
@@ -146,15 +145,15 @@ class User(models.Model):
         return self.expiration
 
     def expire(self):
-        self.expiration = timezone.now()
-        self.save()
+        if self.expiration is not None:
+            self.expiration = timezone.now()
+            self.save()
 
     def has_expired(self):
-        if self.expiration < timezone.now():
-            return True
-        else:
-
-            return False
+        if self.expiration is not None:
+            if self.expiration < timezone.now():
+                return True
+        return False
 
 
 class UserPayment(models.Model):

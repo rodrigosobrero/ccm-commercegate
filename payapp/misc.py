@@ -28,3 +28,17 @@ def paymentez_translator(content):
     ret["intercom"]     = data["intercom"]
 
     return ret
+
+
+def paymentez_intercom_metadata(data):
+    ret = {"integrator": "paymentez",
+           "authorization_code": "",
+           "id": "",
+           "status_detail": "",
+           "amount": ""}
+
+    for key in ret.keys():
+        if key in data:
+            ret[key] = data[key]
+
+    return ret
