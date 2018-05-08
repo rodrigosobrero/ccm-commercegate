@@ -45,6 +45,7 @@ http_BAD_REQUEST          = 400
 http_UNPROCESSABLE_ENTITY = 422
 http_NOT_ALLOWED          = 405
 http_UNAUTHORIZED         = 401
+http_PAYMENT_REQUIRED     = 402
 http_INTERNAL_ERROR       = 500
 
 
@@ -269,7 +270,7 @@ def create_payment(request):
                                "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.com"
                 message = "communication error with paymentez, waiting callback"
                 body = {'status': 'error', 'message': message, 'user_message': user_message}
-                return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_PAYMENT_REQUIRED)
 
             if ret:
                 # Obtengo los valores segun la respuesta de Paymentez
