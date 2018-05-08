@@ -16,6 +16,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from payapp.models import Setting
 from payapp.models import UserPayment
 from payapp.models import Card
+from payapp.models import Integrator
 from payapp.models import IntegratorSetting
 from payapp.models import PaymentHistory
 
@@ -189,6 +190,47 @@ def make_payment(up, card):
     return ret
 
 
+def callback_checker(integrator):
+    integrator = Integrator.objects.get(name=integrator)
+    timeout = IntegratorSetting.get_var(integrator, 'callback_timeout')
+    phs = PaymentHistory.objects.filter(status='W')
+    logging.info("callback_checker(): Checking callbacks expiration...")
+    for ph in phs:
+        logging.info("callback_checker(): PaymentHistory %s expired. New status... Error" % ph.payment_id)
+        t = ph.modification_date + timezone.timedelta(seconds=int(timeout))
+        if timezone.now() > t:
+            ph.user_payment.timeout_error("callback timeout error")
+            ph.status = 'E'
+            ph.message = "callback timeout error"
+            ph.save()
+
+            logging.info("callback_checker(): Sending event to Intercom: rejected-pay")
+            ep = Setting.get_var('intercom_endpoint')
+            token = Setting.get_var('intercom_token')
+            try:
+                metadata = {"integrator": "paymentez",
+                            "authorization_code": "",
+                            "id": "",
+                            "status_detail": "timeout",
+                            "amount": ""}
+                intercom = Intercom(ep, token)
+                reply = intercom.submitEvent(ph.user_payment.user.user_id,
+                                             ph.user_payment.user.email,
+                                             "rejected-pay",
+                                             metadata)
+
+                if not reply:
+                    msg = "Intercom error: cannot post the event"
+                    ph.message = "%s - %s" % (ph.message, msg)
+                    logging.info("callback_checker(): %s" % msg)
+                    ph.save()
+            except Exception as e:
+                msg = "Intercom error: %s" % str(e)
+                ph.message = "%s - %s" % (ph.message, msg)
+                logging.info("callback_checker(): %s" % msg)
+                ph.save()
+
+
 def payd_main():
     logging.basicConfig(format   = '%(asctime)s - payd.py -[%(levelname)s]: %(message)s',
                         filename = LOG_FILE,
@@ -223,6 +265,9 @@ def payd_main():
                 logging.info("payd_main(): Payment slot limit reached. Next execution in %s seconds"
                              % str(settings['sleep_time_daemon']))
 
+        callback_checker("paymentez")
+
+        logging.info("payd_main(): Proccess complete. Next execution in %s seconds" % str(settings['sleep_time_daemon']))
         time.sleep(settings['sleep_time_daemon'])
 
 
