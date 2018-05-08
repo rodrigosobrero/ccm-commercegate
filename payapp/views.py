@@ -268,7 +268,7 @@ def create_payment(request):
                 user_message = "Ocurrió un error en la comunicación. Recibirás un correo electrónico en breve con " \
                                "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.com"
                 message = "communication error with paymentez, waiting callback"
-                body = {'status': 'success', 'message': message, 'user_message': user_message}
+                body = {'status': 'error', 'message': message, 'user_message': user_message}
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_POST_OK)
 
             if ret:
