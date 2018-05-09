@@ -166,7 +166,8 @@ class UserPayment(models.Model):
                ('U', 'User'),
                ('R', 'Reply'),
                ('C', 'Callback'),
-               ('T', 'Timeout'))
+               ('T', 'Timeout'),
+               ('F', 'Refund'))
 
     user_payment_id   = models.CharField(max_length=128)
     user              = models.ForeignKey(User)
@@ -280,7 +281,10 @@ class UserPayment(models.Model):
         self.save()
 
     def calculate_discount(self):
-        return self.amount - (self.amount * self.disc_pct / 100)
+        if self.disc_counter > 0:
+            return self.amount - (self.amount * self.disc_pct / 100)
+        else:
+            return self.amount
 
     def calc_payment_date(self):
         # Obtengo cantidad de meses a sumar
@@ -339,6 +343,7 @@ class Card(models.Model):
         self.enabled = False
         self.save()
 
+
 class PaymentHistory(models.Model):
     STATUS = (('P', 'Processing'),
               ('W', 'Waiting callback'),
@@ -357,6 +362,7 @@ class PaymentHistory(models.Model):
     taxable_amount    = models.FloatField(default=0, help_text='Net amount')
     disc_pct          = models.IntegerField(default=0, help_text="Discount percentage")
     message           = models.CharField(max_length=2048, blank=True)
+    integrator        = models.ForeignKey(Integrator, blank=True, null=True)
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -364,11 +370,11 @@ class PaymentHistory(models.Model):
         return self.payment_id
 
     def __amounts_calculator(self):
-        ret = {}
-        tax = self.user_payment.user.country.tax
+        amount = self.user_payment.calculate_discount()
+        tax    = self.user_payment.user.country.tax
+
         if tax > 0:
             if self.user_payment.user.country.full_price:
-                amount         = self.user_payment.amount
                 taxable_amount = round(amount / tax, 2)
                 vat_amount     = round(amount - taxable_amount, 2)
             else:
@@ -384,7 +390,7 @@ class PaymentHistory(models.Model):
 
 
     @classmethod
-    def create(cls, user_payment, card, payment_id, amount, disc_pct=0 ,gateway_id='', status='P'):
+    def create(cls, user_payment, card, payment_id, integrator, disc_pct=0 ,gateway_id='', status='P'):
         ph = cls()
         ph.user_payment   = user_payment
         amounts = ph.__amounts_calculator()
@@ -397,6 +403,7 @@ class PaymentHistory(models.Model):
         ph.vat_amount     = amounts['vat_amount']
         ph.taxable_amount = amounts['taxable_amount']
         ph.disc_pct       = disc_pct
+        ph.integrator     = integrator
         ph.save()
         return ph
 

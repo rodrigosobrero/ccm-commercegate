@@ -18,14 +18,17 @@ import socket
     Card in black list             status = failure, status_detail = 12
 '''
 
+
 class GatewayException(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
+
 class PaymentezGateway(object):
-    def  __init__(self,paymentez_server_application_code,paymentez_server_app_key,paymentez_endpoint):
+    def __init__(self,paymentez_server_application_code,paymentez_server_app_key,paymentez_endpoint):
         self.paymentez_server_app_key          = paymentez_server_app_key
         self.paymentez_server_application_code = paymentez_server_application_code
         self.paymentez_endpoint                = paymentez_endpoint
@@ -39,7 +42,7 @@ class PaymentezGateway(object):
 
     def doPost(self,data):
         method = 'POST'
-        header = { 'Content-type': 'application/json', 'Auth-Token': self.get_auth_token() }
+        header = {'Content-type': 'application/json', 'Auth-Token': self.get_auth_token()}
         uri = urlparse.urlparse(self.paymentez_endpoint) 
 
         try:
@@ -53,8 +56,9 @@ class PaymentezGateway(object):
     
         return False, loads(content)
 
+
 class PaymentezTx(object):
-    def __init__(self,id,email,amount,description,dev_reference,taxable_amount,vat,token):
+    def __init__(self, id, email, amount, description, dev_reference, taxable_amount, vat, token):
         self.id             = id
         self.email          = email
         self.amount         = amount
@@ -63,11 +67,28 @@ class PaymentezTx(object):
         self.taxable_amount = taxable_amount
         self.vat            = vat
         self.token          = token
+
     def serialize(self):
         s = {}
         s['user']  = {'id': self.id, 'email': self.email }
         s['order'] = {'amount': self.amount, 'description': self.description, 'dev_reference': self.dev_reference, 'taxable_amount': self.taxable_amount, 'vat': self.vat }
         s['card']  = {'token': self.token}
+        print s
+        return s
+
+    def to_dict(self):
+        return self.serialize()
+
+    def to_str(self):
+        return dumps(self.serialize())
+
+
+class PaymentezRefund(object):
+    def __init__(self, id):
+        self.id = id
+
+    def serialize(self):
+        s = {'transaction': {'id': self.id}}
         print s
         return s
 

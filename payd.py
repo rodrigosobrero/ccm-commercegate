@@ -96,25 +96,23 @@ def paymentez_payment(up, card):
     disc_flag = False
     if up.disc_counter > 0:
         disc_flag = True
-        amount    = up.calculate_discount()
         disc_pct  = up.disc_pct
-        logging.info("paymentez_payment(): Calculating discount. New amount: %s" % amount)
+        logging.info("paymentez_payment(): Calculating discount.")
     else:
-        amount   = up.amount
         disc_pct = 0
 
     # Genero tx id sumando al userid el timestamp
     payment_id = "PH_%s_%d" % (up.user.user_id, int(time.time()))
 
     # Creo el registro en PaymentHistory
-    ph = PaymentHistory.create(up, card, payment_id, amount, disc_pct)
+    ph = PaymentHistory.create(up, card, payment_id, card.integrator, disc_pct)
     logging.info("paymentez_payment(): Payment history created. ID: %s" % ph.payment_id)
 
 
     # Realizo el pago
     try:
-        logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - amount: %s - "
-                     "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, amount, card.token, ph.payment_id))
+        logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - "
+                     "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, card.token, ph.payment_id))
         ret, content = gw.doPost(PaymentezTx(up.user.user_id, up.user.email, ph.amount, 'HotGo',
                                              ph.payment_id, ph.taxable_amount, ph.vat_amount, card.token))
     except Exception as e:

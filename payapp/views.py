@@ -7,6 +7,7 @@ from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
 from django.core.exceptions import ObjectDoesNotExist
 
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # App Models
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -25,11 +26,14 @@ from models import IntegratorSetting
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import json
 from datetime import datetime
+from datetime import date
 from time import mktime
 from time import time
 
 from paymentez import PaymentezGateway
 from paymentez import PaymentezTx
+from paymentez import PaymentezRefund
+
 from misc import paymentez_translator
 from misc import paymentez_intercom_metadata
 
@@ -247,17 +251,15 @@ def create_payment(request):
             disc_flag = False
             if up.disc_counter > 0:
                 disc_flag = True
-                amount   = up.calculate_discount()
                 disc_pct = up.disc_pct
             else:
-                amount   = up.amount
                 disc_pct = 0
 
             # Genero tx id sumando al userid el timestamp
             payment_id = "PH_%s_%d" % (user.user_id, int(time()))
 
             # Creo el registro en PaymentHistory
-            ph = PaymentHistory.create(up, card, payment_id, amount, disc_pct)
+            ph = PaymentHistory.create(up, card, payment_id, integrator, disc_pct)
 
             try:
                 ret, content = gw.doPost(PaymentezTx(user.user_id, user.email, ph.amount,'HotGo', ph.payment_id
@@ -267,7 +269,7 @@ def create_payment(request):
                 ph.status = "W"
                 ph.save()
                 user_message = "Ocurrió un error en la comunicación. Recibirás un correo electrónico en breve con " \
-                               "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.com"
+                               "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.tv"
                 message = "communication error with paymentez, waiting callback"
                 body = {'status': 'error', 'message': message, 'user_message': user_message}
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_PAYMENT_REQUIRED)
@@ -589,29 +591,27 @@ def user_status(request, user_id):
     # Verifico que el usuario exista
     try:
         user = User.objects.get(user_id=user_id)
-        if user.expiration is not None:
-            ret['expiration'] = mktime(user.expiration.timetuple())
-        else:
-            ret['expiration'] = None
     except ObjectDoesNotExist:
         message = "user_id %s does not exist" % user_id
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
-        
+
+    if user.expiration is not None and user.expiration >= date.today():
+        ret['expiration'] = mktime(user.expiration.timetuple())
+    else:
+        ret['expiration'] = None
+
     # Obtengo el UserPayment activo y si no existe devuelvo solo fecha de expiracion
     try:
         up = UserPayment.objects.get(user=user, enabled=True)
     except ObjectDoesNotExist:
-        ret['status'] = 'N'
+        ret['status']  = 'E'
+        ret['message'] = 'UserPayement enabled not found'
         body = {'status': 'success', 'value': ret}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
     
-    if up.status == 'ER':
-        ret['status']   = 'E'
-        ret['message']  = up.message
-    else:
-        ret['status']   = 'A'
-        ret['message']  = ''
+    ret['status']   = 'A'
+    ret['message']  = ''
  
     ret['recurrence']   = up.recurrence
     ret['payment_date'] = mktime(up.payment_date.timetuple())
@@ -707,4 +707,59 @@ def get_enabled_card(request, user_id):
     return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
 
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                Realiza un refund para el PaymentHistory indicado                           #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Parametros: payment_history id (payment_id)                                                                #
+# Retorno: estado del refund                                                                                 #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+@require_http_methods(["GET"])
+def refund(request, payment_id):
+    # Verifico ApiKey
+    cap = __check_apikey(request)
+    if cap['status'] == 'error':
+        return HttpResponse(status=http_UNAUTHORIZED)
 
+    # Verifico que el Payment exista
+    try:
+        ph = PaymentHistory.objects.get(payment_id=payment_id)
+    except ObjectDoesNotExist:
+        message = "paymentd_id not found"
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    if ph.integrator.name == 'paymentez':
+        try:
+            gw = PaymentezGateway(IntegratorSetting.get_var(ph.integrator, 'paymentez_server_application_code'),
+                                  IntegratorSetting.get_var(ph.integrator, 'paymentez_server_app_key'),
+                                  IntegratorSetting.get_var(ph.integrator, 'paymentez_refund_endpoint'))
+        except Exception as e:
+            message = "could not create user payment: (%s)" % str(e)
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+        try:
+            ret, content = gw.doPost(PaymentezRefund(ph.gateway_id))
+        except Exception:
+            message = "communication error"
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_PAYMENT_REQUIRED)
+
+        if ret:
+            if content['status'] == 'success':
+                ph.cancel(ph.gateway_id, 'claxson refund')
+                ph.user_payment.cancel("F", 'claxson refund')
+                return HttpResponse(json.dumps(content), content_type="application/json", status=http_REQUEST_OK)
+            else:
+                message = str(content['detail'])
+                body = {'status': 'error', 'message': message}
+                return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
+        else:
+            message = str(content)
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
+
+    else:
+        message = "could not create user payment: (Unknown Integrator: %s)" % str(ph.integrator.name)
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)

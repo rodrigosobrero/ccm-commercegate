@@ -24,6 +24,7 @@ from payapp.views import user_status
 from payapp.views import get_cards
 from payapp.views import get_enabled_card
 from payapp.views import change_user_email
+from payapp.views import refund
 from payapp.callback_views import callback_paymentez
 
 
@@ -38,4 +39,5 @@ urlpatterns = [
     url(r'^api/v1/callback/paymentez/', callback_paymentez),
     url(r'^api/v1/get/cards/(?P<user_id>[\w\-]+)', get_cards),
     url(r'^api/v1/get/enabledcard/(?P<user_id>[\w\-]+)', get_enabled_card),
+    url(r'^api/v1/get/refund/(?P<payment_id>[\w\-]+)', refund),
 ]
