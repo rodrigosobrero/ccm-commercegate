@@ -162,6 +162,7 @@ def callback_paymentez(request):
 
     # Verifico
     if data["transaction"]["application_code"] == "HOTG-EC-SERVER":
+        print "CALLBACK: %s" % str(data)
         return __callback_paymentez_ecuador(data)
     else:
         body = {"status": "error", "message": "ignoring callback: app_code"}
