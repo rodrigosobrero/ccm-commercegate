@@ -20,8 +20,8 @@ class Intercom(object):
         return self.h.request(uri.geturl(), method, dumps(body),
                               {'Accept': 'application/json', 'Content-type': 'application/json', 'Authorization': 'Bearer %s' % self.token})
 
-    def createUser(self, user_id, email):
-        user = {"name": user_id, "email": email }
+    def createUser(self, user_id, email, metadata):
+        user = {"name": user_id, "email": email, "custom_attributes": metadata}
         temp_ep = self.endpoint
         self.endpoint = 'https://api.intercom.io/users'
         try:
@@ -39,7 +39,7 @@ class Intercom(object):
             return False
 
     def submitEvent(self, user_id, email, event_name, metadata):
-        self.createUser(user_id, email)
+        self.createUser(user_id, email, metadata)
 
         event = {}
         event['name']       = user_id
