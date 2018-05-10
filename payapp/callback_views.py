@@ -83,7 +83,7 @@ def __callback_paymentez_ecuador(data):
     # Verifico el stoken
     if not __validate_stoken(data, "ec"):
         body = {"status": "error", "message": "not authorized"}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
     # Obtengo los valores segun la respuesta de Paymentez
     pr = paymentez_translator(data)
@@ -93,7 +93,7 @@ def __callback_paymentez_ecuador(data):
         ph = PaymentHistory.objects.get(payment_id=data["transaction"]["dev_reference"])
     except ObjectDoesNotExist:
         body = {"status": "error", "message": "invalid dev_refence"}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
     # Verifico que este en Waiting Callback
     if ph.status == 'W' or (ph.status == 'A' and pr["ph_status"] == 'C'):
@@ -139,10 +139,10 @@ def __callback_paymentez_ecuador(data):
 
     else:
         body = {"status": "error", "message": "ignoring callback: PH status %s" % ph.status}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
     body = {'status': 'success', 'message': ''}
-    return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+    return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
 
 @require_http_methods(["POST"])
@@ -152,17 +152,17 @@ def callback_paymentez(request):
         data = json.loads(request.body)
     except Exception:
         body = {"status": "error", "message": "error loading json"}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
     # Verifico las key mandatorios del json
     keys = [{'transaction': ['id', 'application_code', 'dev_reference', 'stoken']}, {'user':['id']}]
     json_loader = __validate_json(data, keys)
     if json_loader['status'] == 'error':
-        return HttpResponse(json.dumps(json_loader), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(json_loader), content_type="application/json", status=200)
 
     # Verifico
     if data["transaction"]["application_code"] == "HOTG-EC-SERVER":
         return __callback_paymentez_ecuador(data)
     else:
         body = {"status": "error", "message": "ignoring callback: app_code"}
-        return HttpResponse(json.dumps(body), content_type="application/json", status=201)
+        return HttpResponse(json.dumps(body), content_type="application/json", status=200)
