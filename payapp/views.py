@@ -74,8 +74,9 @@ def __validate_json(json_data, keys):
             message = "invalid amount value"
             return {'status': 'error', 'message': message}
     if 'recurrence' in json_data:
-        if int(json_data['recurrence']) <= 0:
-            message = "invalid recurrence value"
+        t, r = divmod(int(json_data['recurrence']), 30)
+        if t < 1 or r > 0:
+            message = "invalid recurrence value. value %s is not multiple of 30 " % str(json_data['recurrence'])
             return {'status': 'error', 'message': message}
     
     return {'status': 'success'}
