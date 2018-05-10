@@ -510,13 +510,11 @@ def change_token_card(request):
         message = "integrator %s does not exist" % data['integrator']
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
-        
+
     # Desabilito cualquier otra tarjeta del usuario
-    try:
-        card = Card.objects.get(user=user, enabled=True)
+    cards = Card.objects.filter(user=user, enabled=True)
+    for card in cards:
         card.disable()
-    except ObjectDoesNotExist:
-        pass
 
     # Verifico si la tarjeta ya fue cargada y la habilito.
     card = __get_card(user, data['token'])
@@ -618,7 +616,7 @@ def delete_card(request, token):
             return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
         if ret:
-            card.delete()
+            card.sdelete()
             message = "card with token %s deleted succesfully" % str(card.token)
             body = {'status': 'success', 'message': message}
             return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
@@ -702,7 +700,7 @@ def get_cards(request, user_id):
         body = {'status': 'error', 'message': message}
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
         
-    cards = Card.objects.filter(user=user)
+    cards = Card.objects.filter(user=user, deleted=False)
     value = []
     for card in cards:
         ret = {}
@@ -744,7 +742,7 @@ def get_enabled_card(request, user_id):
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
         
     try:    
-        card = Card.objects.get(user=user, enabled=True)
+        card = Card.objects.get(user=user, enabled=True, deleted=False)
     except ObjectDoesNotExist:
         message = "card enabled not found"
         body = {'status': 'error', 'message': message}

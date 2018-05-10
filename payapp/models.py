@@ -315,6 +315,7 @@ class Card(models.Model):
     token             = models.CharField(max_length=256, blank=True)
     integrator        = models.ForeignKey(Integrator)
     enabled           = models.BooleanField(default=False)
+    deleted           = models.BooleanField(default=False)
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -336,11 +337,16 @@ class Card(models.Model):
         return cd
     
     def enable(self):
+        self.deleted = False
         self.enabled = True
         self.save()
         
     def disable(self):
         self.enabled = False
+        self.save()
+
+    def sdelete(self):
+        self.deleted = True
         self.save()
 
 

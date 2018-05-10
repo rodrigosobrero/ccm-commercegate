@@ -33,7 +33,7 @@ class UserPaymentAdmin(admin.ModelAdmin):
 
 @admin.register(models.Card)
 class CardAdmin(admin.ModelAdmin):
-    list_display = ['card_id', 'user', 'token', 'integrator', 'enabled', 'creation_date']
+    list_display = ['card_id', 'user', 'token', 'integrator', 'enabled', 'deleted', 'creation_date']
 
 @admin.register(models.PaymentHistory)
 class PaymentHistoryAdmin(admin.ModelAdmin):
