@@ -97,3 +97,22 @@ class PaymentezRefund(object):
 
     def to_str(self):
         return dumps(self.serialize())
+
+
+class DeleteCard(object):
+    def __init__(self, token, user_id):
+        self.token   = token
+        self.user_id = user_id
+
+    def serialize(self):
+        s = {}
+        s['card'] = {'token': self.token}
+        s['user'] = {'id': self.user_id}
+        print s
+        return s
+
+    def to_dict(self):
+        return self.serialize()
+
+    def to_str(self):
+        return dumps(self.serialize())

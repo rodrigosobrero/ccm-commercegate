@@ -33,6 +33,7 @@ from time import time
 from paymentez import PaymentezGateway
 from paymentez import PaymentezTx
 from paymentez import PaymentezRefund
+from paymentez import DeleteCard
 
 from misc import paymentez_translator
 from misc import paymentez_intercom_metadata
@@ -573,6 +574,62 @@ def change_user_email(request):
     user.save()
 
     return HttpResponse(status=http_POST_OK)
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                                        Eliminar tarjeta no activa                                          #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# JSON - Mandatorios: user_id, email                                                                         #
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+@require_http_methods(["GET"])
+def delete_card(request, token):
+    # Verifico ApiKey
+    cap = __check_apikey(request)
+    if cap['status'] == 'error':
+        return HttpResponse(status=http_UNAUTHORIZED)
+
+    try:
+        card = Card.objects.get(token=token)
+    except ObjectDoesNotExist:
+        message = "token %s does not exist" % token
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    if card.enabled:
+        message = "card with token %s cannot be deleted because is enabled" % str(token)
+        body = {'status': 'error', 'message': message}
+        return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
+
+    if card.integrator.name == 'paymentez':
+        try:
+            gw = PaymentezGateway(IntegratorSetting.get_var(card.integrator, 'paymentez_server_application_code'),
+                                  IntegratorSetting.get_var(card.integrator, 'paymentez_server_app_key'),
+                                  IntegratorSetting.get_var(card.integrator, 'paymentez_deletecard_endpoint'))
+        except Exception as e:
+            message = "could not delete the card: (%s)" % str(e)
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+        try:
+            ret, content = gw.doPost(DeleteCard(card.token, card.user.user_id))
+        except Exception as e:
+            message = "could not delete the card: (%s)" % str(e)
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
+
+        if ret:
+            card.delete()
+            message = "card with token %s deleted succesfully" % str(card.token)
+            body = {'status': 'success', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_REQUEST_OK)
+        else:
+            message = 'type: %s, help: %s, description: %s' % (content['error']['type'],
+                                                               content['error']['help'],
+                                                               content['error']['description'])
+            body = {'status': 'error', 'message': message}
+            return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
+
+
     
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #                        Devuelve JSON con el estado de la suscripcion del usuario                           #
