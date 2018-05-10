@@ -25,6 +25,7 @@ from payapp.views import get_cards
 from payapp.views import get_enabled_card
 from payapp.views import change_user_email
 from payapp.views import refund
+from payapp.views import delete_card
 from payapp.callback_views import callback_paymentez
 
 
@@ -35,6 +36,7 @@ urlpatterns = [
     url(r'^api/v1/set/cancel', cancel_payment),
     url(r'^api/v1/set/changecard', change_token_card),
     url(r'^api/v1/set/changeemail', change_user_email),
+    url(r'^api/v1/get/deletecard/(?P<token>[\w\-]+)', delete_card),
     url(r'^api/v1/get/userstatus/(?P<user_id>[\w\-]+)', user_status),
     url(r'^api/v1/callback/paymentez/', callback_paymentez),
     url(r'^api/v1/get/cards/(?P<user_id>[\w\-]+)', get_cards),
