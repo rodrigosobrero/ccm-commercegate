@@ -144,6 +144,11 @@ class User(models.Model):
         self.save()
         return self.expiration
 
+    def set_expiration(self, date):
+        self.expiration = date
+        self.save()
+        return self.expiration
+
     def expire(self):
         if self.expiration is not None:
             self.expiration = timezone.now()

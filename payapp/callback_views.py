@@ -107,7 +107,7 @@ def __callback_paymentez_ecuador(data):
             # calcular next_payment_day
             ph.user_payment.payment_date = ph.user_payment.calc_payment_date()
             # Fija la fecha de expiration del usuario
-            ph.user_payment.user.add_to_expiration(ph.user_payment.recurrence)
+            ph.user_payment.user.set_expiration(ph.user_payment.payment_date)
             if ph.user_payment.disc_counter > 0:
                 ph.user_payment.disc_counter = ph.user_payment.disc_counter - 1
         else:

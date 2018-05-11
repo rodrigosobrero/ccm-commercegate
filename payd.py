@@ -137,7 +137,7 @@ def paymentez_payment(up, card):
             up.payment_date = up.calc_payment_date()
             # Fija la fecha de expiration del usuario
             logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
-            up.user.add_to_expiration(up.recurrence)
+            up.user.set_expiration(up.payment_date)
             if disc_flag:
                 up.disc_counter = up.disc_counter - 1
         else:

@@ -288,7 +288,7 @@ def create_payment(request):
                     # calcular next_payment_day
                     up.payment_date = up.calc_payment_date()
                     # Fija la fecha de expiration del usuario
-                    user.add_to_expiration(int(data['recurrence']))
+                    user.set_expiration(up.payment_date)
                     if disc_flag:
                         up.disc_counter = up.disc_counter - 1
                 else:
