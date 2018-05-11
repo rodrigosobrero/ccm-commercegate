@@ -654,7 +654,7 @@ def user_status(request, user_id):
 
     if user.expiration is not None and user.expiration >= date.today():
         # A la expiracion le sumo un dia para evitar dejarlo sin acceso sin haber intentado cobrarle
-        ret['expiration'] = mktime(user.expiration.timetuple()) + 60*60*24
+        ret['expiration'] = mktime(user.expiration.timetuple())
     else:
         ret['expiration'] = None
 

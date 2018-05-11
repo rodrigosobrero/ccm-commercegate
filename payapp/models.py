@@ -145,7 +145,7 @@ class User(models.Model):
         return self.expiration
 
     def set_expiration(self, date):
-        self.expiration = date
+        self.expiration = date + timedelta(days=1)
         self.save()
         return self.expiration
 
