@@ -653,7 +653,8 @@ def user_status(request, user_id):
         return HttpResponse(json.dumps(body), content_type="application/json", status=http_BAD_REQUEST)
 
     if user.expiration is not None and user.expiration >= date.today():
-        ret['expiration'] = mktime(user.expiration.timetuple())
+        # A la expiracion le sumo un dia para evitar dejarlo sin acceso sin haber intentado cobrarle
+        ret['expiration'] = mktime(user.expiration.timetuple()) + 60*60*24
     else:
         ret['expiration'] = None
 
