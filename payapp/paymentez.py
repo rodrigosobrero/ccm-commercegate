@@ -46,6 +46,8 @@ class PaymentezGateway(object):
         uri = urlparse.urlparse(self.paymentez_endpoint) 
 
         try:
+            print "HEADER: " + str(header)
+            print "BODY: " + data.to_str()
             response, content = self.h.request(uri.geturl(), method, data.to_str(), header)
         except socket.error as err:
             raise GatewayException(err)

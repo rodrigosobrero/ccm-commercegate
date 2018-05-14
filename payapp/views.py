@@ -266,6 +266,7 @@ def create_payment(request):
             try:
                 ret, content = gw.doPost(PaymentezTx(user.user_id, user.email, ph.amount,'HotGo', ph.payment_id
                                                      , ph.taxable_amount, ph.vat_amount, card.token))
+                print "CONTENT: %s" % str(content)
             except Exception:
                 # Pongo el pago en Waiting Callback
                 ph.status = "W"
@@ -331,7 +332,7 @@ def create_payment(request):
                                                                    content['error']['help'],
                                                                    content['error']['description'])
                 up.reply_error(message)
-                ph.error(content)
+                ph.error('', content)
                 body = {'status': 'error', 'message': message}
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
 
