@@ -85,8 +85,7 @@ class IntegratorSetting(models.Model):
     @classmethod
     def get_var(cls,integrator,key,cast=True):
         try:
-            i = Integrator.objects.get(name=integrator)
-            v = cls.objects.get(integrator=i, key=key)
+            v = cls.objects.get(integrator=integrator, key=key)
             if cast:
                 return v.cast()
             else:
