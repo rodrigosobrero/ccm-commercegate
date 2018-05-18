@@ -69,7 +69,7 @@ class Integrator(models.Model):
     method  = models.CharField(max_length=2, choices=METHOD, default='TO')
 
     def __unicode__(self):
-        return self.name
+        return "%s_%s" % (self.name, self.country.code)
 
 
 class IntegratorSetting(models.Model):

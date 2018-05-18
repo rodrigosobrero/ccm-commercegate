@@ -188,13 +188,12 @@ def make_payment(up, card):
     return ret
 
 
-def callback_checker(integrator):
-    integrator = Integrator.objects.get(name=integrator)
+def paymentez_callback_checker(integrator):
     timeout = IntegratorSetting.get_var(integrator, 'callback_timeout')
     phs = PaymentHistory.objects.filter(status='W')
-    logging.info("callback_checker(): Checking callbacks expiration...")
+    logging.info("paymentez_callback_checker(): Checking callbacks expiration...")
     for ph in phs:
-        logging.info("callback_checker(): PaymentHistory %s expired. New status... Error" % ph.payment_id)
+        logging.info("paymentez_callback_checker(): PaymentHistory %s expired. New status... Error" % ph.payment_id)
         t = ph.modification_date + timezone.timedelta(seconds=int(timeout))
         if timezone.now() > t:
             ph.user_payment.timeout_error("callback timeout error")
@@ -202,7 +201,7 @@ def callback_checker(integrator):
             ph.message = "callback timeout error"
             ph.save()
 
-            logging.info("callback_checker(): Sending event to Intercom: rejected-pay")
+            logging.info("paymentez_callback_checker(): Sending event to Intercom: rejected-pay")
             ep = Setting.get_var('intercom_endpoint')
             token = Setting.get_var('intercom_token')
             try:
@@ -220,12 +219,12 @@ def callback_checker(integrator):
                 if not reply:
                     msg = "Intercom error: cannot post the event"
                     ph.message = "%s - %s" % (ph.message, msg)
-                    logging.info("callback_checker(): %s" % msg)
+                    logging.info("paymentez_callback_checker(): %s" % msg)
                     ph.save()
             except Exception as e:
                 msg = "Intercom error: %s" % str(e)
                 ph.message = "%s - %s" % (ph.message, msg)
-                logging.info("callback_checker(): %s" % msg)
+                logging.info("paymentez_callback_checker(): %s" % msg)
                 ph.save()
 
 
@@ -263,7 +262,10 @@ def payd_main():
                 logging.info("payd_main(): Payment slot limit reached. Next execution in %s seconds"
                              % str(settings['sleep_time_daemon']))
 
-        callback_checker("paymentez")
+        # Verifico el estado de los callbacks para paymentez
+        integrators = Integrator.objects.filter(name="paymentez")
+        for integrator in integrators:
+            paymentez_callback_checker(integrator)
 
         logging.info("payd_main(): Proccess complete. Next execution in %s seconds" % str(settings['sleep_time_daemon']))
         time.sleep(settings['sleep_time_daemon'])
