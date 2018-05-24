@@ -73,9 +73,8 @@ class PaymentezTx(object):
     def serialize(self):
         s = {}
         s['user']  = {'id': self.id, 'email': self.email }
-        s['order'] = {'amount': self.amount, 'description': self.description, 'dev_reference': self.dev_reference}
+        s['order'] = {'amount': self.amount, 'description': self.description, 'dev_reference': self.dev_reference, 'vat': self.vat}
         if self.vat > 0:
-            s['order']['vat'] = self.vat
             s['order']['taxable_amount'] = self.taxable_amount
         s['card']  = {'token': self.token}
         print s

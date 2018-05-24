@@ -333,12 +333,14 @@ def create_payment(request):
                                                                    content['error']['description'])
                 up.reply_error(message)
                 ph.error('', content)
-                body = {'status': 'error', 'message': message}
+                user_message = "Ocurrió un error con el pago, por favor reintente nuevamente más tarde"
+                body = {'status': 'error', 'message': message, 'user_message': user_message}
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_UNPROCESSABLE_ENTITY)
 
         else:
+            user_message = "Ocurrió un error con el pago, por favor reintente nuevamente más tarde"
             message = "could not create user payment: (Unknown Integrator: %s)" % str(integrator.name)
-            body = {'status': 'error', 'message': message}
+            body = {'status': 'error', 'message': message, 'user_message': user_message}
             return HttpResponse(json.dumps(body), content_type="application/json", status=http_INTERNAL_ERROR)
 
     user_message = "Suscripción exitosa"

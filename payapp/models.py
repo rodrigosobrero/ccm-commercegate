@@ -393,7 +393,7 @@ class PaymentHistory(models.Model):
                 vat_amount     = round(amount - taxable_amount, 2)
         else:
             amount         = self.user_payment.amount
-            taxable_amount = 0
+            taxable_amount = self.user_payment.amount
             vat_amount     = 0
 
         return {'amount': amount, 'taxable_amount': taxable_amount, 'vat_amount': vat_amount}
