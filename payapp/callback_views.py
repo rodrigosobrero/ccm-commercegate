@@ -165,5 +165,6 @@ def callback_paymentez(request):
         print "CALLBACK: %s" % str(data)
         return __callback_paymentez_ecuador(data)
     else:
+        print "CALLBACK_CLIENT: %s" % str(data)
         body = {"status": "error", "message": "ignoring callback: app_code"}
         return HttpResponse(json.dumps(body), content_type="application/json", status=200)
