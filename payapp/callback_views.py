@@ -79,9 +79,9 @@ def __validate_stoken(data, country):
         return False
 
 
-def __callback_paymentez_ecuador(data):
+def __callback_paymentez_proc(data, country):
     # Verifico el stoken
-    if not __validate_stoken(data, "ec"):
+    if not __validate_stoken(data, country):
         body = {"status": "error", "message": "not authorized"}
         return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
@@ -163,7 +163,10 @@ def callback_paymentez(request):
     # Verifico
     if data["transaction"]["application_code"] == "HOTG-EC-SERVER":
         print "CALLBACK: %s" % str(data)
-        return __callback_paymentez_ecuador(data)
+        return __callback_paymentez_proc(data, 'ec')
+    elif data["transaction"]["application_code"] == "HOTG-MX-SERVER":
+        print "CALLBACK: %s" % str(data)
+        return __callback_paymentez_proc(data, 'mx')
     else:
         print "CALLBACK_CLIENT: %s" % str(data)
         body = {"status": "error", "message": "ignoring callback: app_code"}
