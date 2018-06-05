@@ -27,7 +27,7 @@ from payapp.views import change_user_email
 from payapp.views import refund
 from payapp.views import delete_card
 from payapp.callback_views import callback_paymentez
-
+from payapp.frontend_views import home, userpayments, users, deleteuserpayment, paymenthistory,expireuser, listusersexpire, userpaymentdesactivated
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -42,4 +42,15 @@ urlpatterns = [
     url(r'^api/v1/get/cards/(?P<user_id>[\w\-]+)', get_cards),
     url(r'^api/v1/get/enabledcard/(?P<user_id>[\w\-]+)', get_enabled_card),
     url(r'^api/v1/get/refund/(?P<payment_id>[\w\-]+)', refund),
+
+    url(r'^home/', home, name='home'),
+    url(r'^userpayments', userpayments, name='userpayments'),
+    url(r'^userpaymentdesactivated', userpaymentdesactivated, name='userpaymentdesactivated'),
+
+    url(r'^users', users, name='users'),
+    url(r'^expireuser', expireuser, name='expireuser'),
+    url(r'^listusersexpire', listusersexpire, name='listusersexpire'),
+
+    url(r'^deleteuserpayment', deleteuserpayment, name='deleteuserpayment'),
+    url(r'^paymenthistory', paymenthistory, name='paymenthistory'),
 ]
