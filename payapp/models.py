@@ -171,7 +171,8 @@ class UserPayment(models.Model):
                ('R', 'Reply'),
                ('C', 'Callback'),
                ('T', 'Timeout'),
-               ('F', 'Refund'))
+               ('F', 'Refund'),
+               ('X', 'Claxson'))
 
     user_payment_id   = models.CharField(max_length=128)
     user              = models.ForeignKey(User)
