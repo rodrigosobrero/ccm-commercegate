@@ -12,11 +12,12 @@
         <div class="panel panel-default">
 
               <div class="panel-body">
-                  <form method="get" action="/users/list">
+                  <form method="POST" action="{% url 'paymenthistory' %}">
                     <div class="row">
                       <div class="col-lg-6">
                         <div class="input-group">
                           <span class="input-group-btn">
+                                 <a class="btn btn-default" href="{% url 'paymenthistory' %}"><i class="glyphicon glyphicon-th-list"></i> Mostrar Todos</a>
                             <button class="btn btn-default" type="submit">Buscar</button>
                           </span>
                           <input type="text" class="form-control" name="search" placeholder="Buscar por...">
@@ -24,7 +25,21 @@
                       </div><!-- /.col-lg-6 -->
                     </div><!-- /.row -->
                   </form>
+
               </div>
+
+            <div class="row">
+                <div class="col-xs-8 col-sm-8 col-lg-8">
+                {% if search %}
+                    <div class="alert alert-success alert-dismissible" role="default" style="list-style-type: none;">
+                      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <strong>Filtrado Por:  {{ search }}</strong>
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+            <br>
+                 <br>
 
             <table class="table table-bordered">
 
@@ -35,7 +50,7 @@
                         <th>Card</th>
                         <th>Status</th>
                         <th>Amount</th>
-
+                        <th>Gateway</th>
 
                         <th>Acciones</th>
                     </thead>
@@ -43,11 +58,84 @@
                     {% for item in registros %}
                     <tr>
                         <td>{{ item.payment_id }}</td>
-                        <td>{{ item.user_payment_id }}</td>
+                        <td>{{ item.user_payment.user_payment_id }}</td>
                         <td>{{ item.card.card_id }}</td>
                         <td>{{ item.status }}</td>
                         <td>{{ item.amount }}</td>
+                        <td>{{ item.gateway_id }}</td>
                         <td>
+
+
+<!-- Formulario modal 1526734142 -->
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-xs btn-default" data-toggle="modal" data-target="#ver{{item.id}}">
+  <i class="glyphicon glyphicon-zoom-in"></i> Ver Detalle
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="ver{{item.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="exampleModalLabel"> Detalle PaymentHistory</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+                  <div class="form-group">
+                    <label>User Payment</label> <h5>{{ item.payment_id }}</h5>
+                  </div>
+                  <div class="form-group">
+                    <label>UserPaymentID</label> <h5>{{ item.user_payment.user_payment_id }}</h5>
+                  </div>
+                  <div class="form-group">
+                    <label>Card</label> <h5>{{ item.card.card_id }}</h5>
+                  </div>
+                  <div class="form-group">
+                    <label>Status</label> <h5>{{ item.status }}</h5>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Gateway</label> <h5>{{ item.gateway_id }}</h5>
+                  </div>
+                <div class="form-group">
+                    <label>Amount</label> <h5>{{ item.amount }}</h5>
+                  </div>
+
+              <div class="form-group">
+                    <label>Tax Amount</label> <h5>{{ item.vat_amount }}</h5>
+                  </div>
+              <div class="form-group">
+                    <label>Net Amount</label> <h5>{{ item.taxable_amount }}</h5>
+                  </div>
+              <div class="form-group">
+                    <label>Discount percentage</label> <h5>{{ item.disc_pct }}</h5>
+                  </div>
+                <div class="form-group">
+                    <label>Message</label> <h5>{{ item.message }}</h5>
+                  </div>
+                <div class="form-group">
+                    <label>Integrator</label> <h5>{{ item.integrator.name }}</h5>
+                  </div>
+
+                  <div class="modal-footer">
+                    <button type="button" class="btn  btn-secondary" data-dismiss="modal">Cancelar</button>
+                  </div>
+
+
+
+        </div>
+      </div>
+      </div>
+</div>
+
+
+
+
+
+
+
 
                         </td>
                     </tr>
