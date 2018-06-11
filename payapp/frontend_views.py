@@ -35,10 +35,17 @@ http_UNAUTHORIZED         = 401
 http_PAYMENT_REQUIRED     = 402
 http_INTERNAL_ERROR       = 500
 
-STATUS = (('PE', 'Pending'),
+STATUS_USER_PAYMENT = (('PE', 'Pending'),
           ('AC', 'Active'),
           ('CA', 'Cancelled'),
           ('ER', 'Error'))
+
+STATUS_PAYMENT_HISTORY = (('P', 'Processing'),
+          ('W', 'Waiting callback'),
+          ('A', 'Approved'),
+          ('R', 'Rejected'),
+          ('C', 'Cancelled'),
+          ('E', 'Error'))
 
 CHANNEL = (('E', ''),
            ('U', 'User'),
@@ -135,7 +142,7 @@ def userpaymentdesactivated(request):
             userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=False).order_by('-user_id')
 
 
-    context = {'registros':userpayments,'search':search}
+    context = {'registros':userpayments,'search':search,'status': dict(STATUS_USER_PAYMENT)}
     return render(request, 'payapp/views/userpayments/listdesactivated.html', context)
 
 
@@ -180,7 +187,7 @@ def paymenthistory(request,user_payment_id='', user_id=''):
         else:
             paymenthistories = PaymentHistory.objects.all()
 
-    context = {'registros': paymenthistories,'search':search, 'status': dict(STATUS)}
+    context = {'registros': paymenthistories,'search':search, 'status': dict(STATUS_PAYMENT_HISTORY)}
     return render(request, 'payapp/views/paymentshistory/list.html', context)
 
 
@@ -212,7 +219,7 @@ def userpayments(request, user_id=''):
 
 
 
-    context = {'registros': userpayments, 'search': search}
+    context = {'registros': userpayments, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
     return render(request, 'payapp/views/userpayments/list.html', context)
 
     #INTERFAZ HTML
