@@ -66,7 +66,14 @@
                         <td>{{ item.payment_date|date:'d/m/Y' }}</td>
                         <td>{{ item.payday }}</td>
                         <td>{{ item.recurrence }}</td>
-                        <td>{{ item.status }}</td>
+                        <td>
+                             {% for key, i in status.items %}
+                                {% if key == item.status %}
+                                   {{ i }}
+                                {% endif %}
+                             {% endfor %}
+
+                        </td>
                         <td>
 
 

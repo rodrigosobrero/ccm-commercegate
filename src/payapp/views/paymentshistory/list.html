@@ -60,7 +60,12 @@
                         <td>{{ item.payment_id }}</td>
                         <td>{{ item.user_payment.user_payment_id }}</td>
                         <td>{{ item.card.card_id }}</td>
-                        <td>{{ item.status }}</td>
+                        <td>{% for key, i in status.items %}
+                                {% if key == item.status %}
+                                   {{ i }}
+                                {% endif %}
+                             {% endfor %}
+                        </td>
                         <td>{{ item.amount }}</td>
                         <td>{{ item.gateway_id }}</td>
                         <td>
@@ -93,7 +98,14 @@
                     <label>Card</label> <h5>{{ item.card.card_id }}</h5>
                   </div>
                   <div class="form-group">
-                    <label>Status</label> <h5>{{ item.status }}</h5>
+                    <label>Status</label>
+                  <h5>
+                      {% for key, i in status.items %}
+                        {% if key == item.status %}
+                           {{ i }}
+                        {% endif %}
+                     {% endfor %}
+                  </h5>
                   </div>
 
                   <div class="form-group">
