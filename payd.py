@@ -109,18 +109,23 @@ def paymentez_payment(up, card):
     logging.info("paymentez_payment(): Payment history created. ID: %s" % ph.payment_id)
 
 
-    # Realizo el pago
-    try:
-        logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - "
-                     "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, card.token, ph.payment_id))
-        ret, content = gw.doPost(PaymentezTx(up.user.user_id, up.user.email, ph.amount, 'HotGo',
+    # Realizo el pago si amount mayor a 0
+    if ph.amount > 0:
+        try:
+            logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - "
+                         "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, card.token, ph.payment_id))
+            ret, content = gw.doPost(PaymentezTx(up.user.user_id, up.user.email, ph.amount, 'HotGo',
                                              ph.payment_id, ph.taxable_amount, ph.vat_amount, card.token))
-    except Exception as e:
-        logging.info("paymentez_payment(): Communication error. New PaymentHistory status: Waiting Callback")
-        # Pongo el pago en Waiting Callback
-        ph.status = "W"
-        ph.save()
-        return False
+        except Exception as e:
+            logging.info("paymentez_payment(): Communication error. New PaymentHistory status: Waiting Callback")
+            # Pongo el pago en Waiting Callback
+            ph.status = "W"
+            ph.save()
+            return False
+    else:
+        ret = True
+        content = {'transaction': {'status_detail':'-10', 'id':'-10', 'message': 'Pago con descuento del 100%'}}
+        pr  = paymentez_translator(content)
 
     if ret:
         # Obtengo los valores segun la respuesta de Paymentez

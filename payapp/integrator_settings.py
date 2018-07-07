@@ -274,7 +274,19 @@ PAYMENTEZ = {"paymentez":
                              {"action": False,
                               "event": "rejected-pay"
                               }
+                        },
+                    "-10":
+                        {"description":"Paid",
+                         "up_status":"AC",
+                         "up_recurrence":True,
+                         "ph_status":"A",
+                         "user_msg":"Pago exitoso con descuento del 100%",
+                         "expire_user":False,
+                         "intercom":
+                             {"action": True,
+                              "event": "approved-pay"
+                             }
                          }
+                        }
                     }
                  }
-             }

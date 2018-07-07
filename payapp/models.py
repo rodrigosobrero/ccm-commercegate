@@ -212,9 +212,9 @@ class UserPayment(models.Model):
             up.payment_date = datetime.fromtimestamp(int(payment_date))
             up.status       = 'AC'
         up.payday       = payday
-        up.recurrence   = recurrence
-        up.disc_pct     = discount
-        up.disc_counter = disc_counter
+        up.recurrence   = int(recurrence)
+        up.disc_pct     = int(discount)
+        up.disc_counter = int(disc_counter)
         up.enabled      = True
         up.save()
         return up
@@ -287,7 +287,7 @@ class UserPayment(models.Model):
 
     def calculate_discount(self):
         if self.disc_counter > 0:
-            return self.amount - (self.amount * self.disc_pct / 100)
+            return self.amount - (self.amount * float(self.disc_pct) / 100.0)
         else:
             return self.amount
 
@@ -387,17 +387,18 @@ class PaymentHistory(models.Model):
         if tax > 0:
             if self.user_payment.user.country.full_price:
                 taxable_amount = round(amount / tax, 2)
+                calc_amount    = amount
                 vat_amount     = round(amount - taxable_amount, 2)
             else:
-                taxable_amount = self.user_payment.amount
-                amount         = round(taxable_amount * tax, 2)
+                taxable_amount = amount
+                calc_amount    = round(taxable_amount * tax, 2)
                 vat_amount     = round(amount - taxable_amount, 2)
         else:
-            amount         = self.user_payment.amount
-            taxable_amount = self.user_payment.amount
+            calc_amount    = amount
+            taxable_amount = amount
             vat_amount     = 0
 
-        return {'amount': amount, 'taxable_amount': taxable_amount, 'vat_amount': vat_amount}
+        return {'amount': calc_amount, 'taxable_amount': taxable_amount, 'vat_amount': vat_amount}
 
 
     @classmethod

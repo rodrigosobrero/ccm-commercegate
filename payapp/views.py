@@ -263,19 +263,24 @@ def create_payment(request):
             # Creo el registro en PaymentHistory
             ph = PaymentHistory.create(up, card, payment_id, integrator, disc_pct)
 
-            try:
-                ret, content = gw.doPost(PaymentezTx(user.user_id, user.email, ph.amount,'HotGo', ph.payment_id
-                                                     , ph.taxable_amount, ph.vat_amount, card.token))
-                print "CONTENT: %s" % str(content)
-            except Exception:
-                # Pongo el pago en Waiting Callback
-                ph.status = "W"
-                ph.save()
-                user_message = "Ocurrió un error en la comunicación. Recibirás un correo electrónico en breve con " \
-                               "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.tv"
-                message = "communication error with paymentez, waiting callback"
-                body = {'status': 'error', 'message': message, 'user_message': user_message}
-                return HttpResponse(json.dumps(body), content_type="application/json", status=http_PAYMENT_REQUIRED)
+            if ph.amount > 0:
+                try:
+                    ret, content = gw.doPost(PaymentezTx(user.user_id, user.email, ph.amount,'HotGo', ph.payment_id
+                                                         , ph.taxable_amount, ph.vat_amount, card.token))
+                    print "CONTENT: %s" % str(content)
+                except Exception:
+                    # Pongo el pago en Waiting Callback
+                    ph.status = "W"
+                    ph.save()
+                    user_message = "Ocurrió un error en la comunicación. Recibirás un correo electrónico en breve con " \
+                                   "los detalles de tu transacción. Por cualquier duda, contáctate con soporte@hotgo.tv"
+                    message = "communication error with paymentez, waiting callback"
+                    body = {'status': 'error', 'message': message, 'user_message': user_message}
+                    return HttpResponse(json.dumps(body), content_type="application/json", status=http_PAYMENT_REQUIRED)
+            else:
+                ret = True
+                content = {'transaction': {'status_detail':'-10', 'id':'-10', 'message':'Pago con descuento del 100%'}}
+                pr  = paymentez_translator(content)
 
             if ret:
                 # Obtengo los valores segun la respuesta de Paymentez
