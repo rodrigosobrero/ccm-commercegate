@@ -184,7 +184,7 @@ def paymentez_payment(up, card):
 
         return True
 
-     else:
+    else:
         message = 'type: %s, help: %s, description: %s' % (content['error']['type'],
                                                            content['error']['help'],
                                                            content['error']['description'])
