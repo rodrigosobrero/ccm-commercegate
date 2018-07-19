@@ -315,6 +315,7 @@ def create_payment(request):
                 if pr["user_expire"]:
                     user.expire()
 
+                print "Post en intercom"
                 if pr["intercom"]["action"]:
                     ep    = Setting.get_var('intercom_endpoint')
                     token = Setting.get_var('intercom_token')
@@ -330,6 +331,8 @@ def create_payment(request):
                         ph.save()
 
                 body = {'status': rep_status, 'message': '', 'user_message': pr['user_message']}
+                print "################### Subscripcion OK ###############"
+                print body
                 return HttpResponse(json.dumps(body), content_type="application/json", status=http_POST_OK)
 
             else:

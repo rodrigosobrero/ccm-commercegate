@@ -184,6 +184,15 @@ def paymentez_payment(up, card):
 
         return True
 
+     else:
+        message = 'type: %s, help: %s, description: %s' % (content['error']['type'],
+                                                           content['error']['help'],
+                                                           content['error']['description'])
+        up.reply_error(message)
+        ph.error('', content)
+
+        return False
+
 
 def make_payment(up, card):
     if card.integrator.name == 'paymentez':
