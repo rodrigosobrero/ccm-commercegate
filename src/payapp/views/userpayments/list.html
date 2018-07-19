@@ -94,7 +94,7 @@
             </button>
           </div>
           <div class="modal-body">
-            <form method="post" action="/deleteuserpayment/" class="formulario" >
+            <form method="post" action="/ui/deleteuserpayment/" class="formulario" >
                 <input type ="hidden" name="userpayment_id" value="{{item.id}}"/>
                     <div class="form-group">
                     <label for="txtmessage">Message</label>
@@ -116,7 +116,7 @@
 </div>
 
 
-            <a href="/paymenthistory/{{item.user_payment_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-time"></i> HistoryPayments </a>
+            <a href="/ui/paymenthistory/{{item.user_payment_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-time"></i> HistoryPayments </a>
 
 
 

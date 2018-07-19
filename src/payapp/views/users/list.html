@@ -67,7 +67,7 @@
                         <td>
                             <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
 
-                            <a href="/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
+                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
 
                         </td>
                     </tr>
@@ -128,7 +128,7 @@
 
         function expirar(user_id){
 
-                url = "/expireuser"
+                url = "/ui/expireuser"
                 json_data= {
                         "user_id": user_id,
                 };
@@ -145,7 +145,7 @@
                             //leer el tiempo
                             //var strselector = "td[name='td_expiration'][data-id="+user_id+"]";
 
-                            window.location.href = "/users/";
+                            window.location.href = "/ui/users/";
 
 
 

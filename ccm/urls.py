@@ -44,19 +44,19 @@ urlpatterns = [
     url(r'^api/v1/get/enabledcard/(?P<user_id>[\w\-]+)', get_enabled_card),
     url(r'^api/v1/get/refund/(?P<payment_id>[\w\-]+)', refund),
 
-    url(r'^home/', home, name='home'),
-    url(r'^userpayments/(?P<user_id>[\w\-]+)', userpayments, name='userpaymentsfilter'),
-    url(r'^userpayments/', userpayments, name='userpayments'),
+    url(r'^ui/home/', home, name='home'),
+    url(r'^ui/userpayments/(?P<user_id>[\w\-]+)', userpayments, name='userpaymentsfilter'),
+    url(r'^ui/userpayments/', userpayments, name='userpayments'),
 
-    url(r'^userpaymentdesactivated', userpaymentdesactivated, name='userpaymentdesactivated'),
+    url(r'^ui/userpaymentdesactivated', userpaymentdesactivated, name='userpaymentdesactivated'),
 
-    url(r'^users', users, name='users'),
-    url(r'^expireuser', expireuser, name='expireuser'),
-    url(r'^listusersexpire', listusersexpire, name='listusersexpire'),
+    url(r'^ui/users', users, name='users'),
+    url(r'^ui/expireuser', expireuser, name='expireuser'),
+    url(r'^ui/listusersexpire', listusersexpire, name='listusersexpire'),
 
-    url(r'^deleteuserpayment', deleteuserpayment, name='deleteuserpayment'),
+    url(r'^ui/deleteuserpayment', deleteuserpayment, name='deleteuserpayment'),
 
-    url(r'^paymenthistory/(?P<user_payment_id>[\w\-]+)', paymenthistory, name='paymenthistoryfilter'),
-    url(r'^paymenthistory/', paymenthistory, name='paymenthistory'),
+    url(r'^ui/paymenthistory/(?P<user_payment_id>[\w\-]+)', paymenthistory, name='paymenthistoryfilter'),
+    url(r'^ui/paymenthistory/', paymenthistory, name='paymenthistory'),
 
 ]

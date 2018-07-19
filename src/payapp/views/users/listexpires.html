@@ -64,7 +64,7 @@
 
                         <td>
 
-                            <a href="/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
+                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
 
 
                         </td>
@@ -126,7 +126,7 @@
 
         function expirar(user_id){
 
-                url = "/expireuser"
+                url = "/ui/expireuser"
                 json_data= {
                         "user_id": user_id,
                 };
