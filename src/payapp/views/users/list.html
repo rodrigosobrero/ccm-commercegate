@@ -108,7 +108,7 @@
           </ul>
         </nav>
         <ol class="breadcrumb">
-          <li> <p class="navbar-text navbar-right">Pag. {{ registros.number }} de {{ registros.paginator.num_pages }}.</p>   </li>
+            <li><p class="navbar-text navbar-right">Total de Registros: {{ registros.paginator.count }}</p>   </li>
         </ol>
         </div>
         </div>
@@ -123,7 +123,12 @@
         $(".btn.btn-default.expirar").click(function(){
                 var registro = $(".btn.btn-default.expirar");
                 var user_id = registro.attr("data-id");
-                expirar(user_id);
+
+                if(confirm("¿Seguro desea expirar el Usuario?")){
+                    expirar(user_id);
+                };
+
+
         });
 
         function expirar(user_id){
@@ -132,6 +137,7 @@
                 json_data= {
                         "user_id": user_id,
                 };
+
 
                 $.ajax({
                     url: url,
