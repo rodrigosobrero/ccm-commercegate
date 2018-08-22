@@ -29,7 +29,7 @@ class IntegratorSettingAdmin(admin.ModelAdmin):
 
 @admin.register(models.UserPayment)
 class UserPaymentAdmin(admin.ModelAdmin):
-    list_display = ['user_payment_id', 'user', 'amount', 'currency', 'payment_date', 'recurrence', 'status', 'enabled', 'creation_date']
+    list_display = ['user_payment_id', 'user', 'amount', 'currency', 'payment_date', 'recurrence', 'status', 'enabled', 'creation_date', 'message']
 
 @admin.register(models.Card)
 class CardAdmin(admin.ModelAdmin):
