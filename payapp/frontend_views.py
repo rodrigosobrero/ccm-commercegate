@@ -5,7 +5,9 @@ from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect
 from datetime import timedelta
 from django.db.models import Q
-
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.contrib.auth import authenticate, login, logout
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # App Models
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -59,15 +61,41 @@ CHANNEL = (('E', ''),
 
 
 #==========================================INTERFAZ HTML==========================================
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            print 'debuglogin_home'
+            login(request, user)
+            return redirect(home)
+        else:
+            messages.warning(request,'Usuario o Contrasenia Incorrecto')
+
+    return render(request, 'payapp/views/default/login.html', None)
+
+
+
+
+
+def logout_view(request):
+    logout(request)
+    # Redirect to a success page.
+    return redirect(login_view)
+
+
 @require_http_methods(["GET"])
+@login_required(login_url='login')
 def home(request):
     context = {}
     return render(request, 'payapp/views/default/index.html', context)
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def users(request):
-    #agregar mensaje de confirmacion
     search = ''
     if request.method == 'GET':
         fecha = datetime.today()
@@ -94,6 +122,7 @@ def users(request):
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def listusersexpire(request):
     search = ''
     fecha = datetime.today()
@@ -124,6 +153,7 @@ def listusersexpire(request):
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def expireuser(request):
         if request.is_ajax():
             if request.method == 'GET':
@@ -155,6 +185,7 @@ def expireuser(request):
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def userpaymentdesactivated(request):
     search = ''
     if request.method == 'GET':
@@ -181,6 +212,7 @@ def userpaymentdesactivated(request):
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def deleteuserpayment(request):
     if request.method == 'POST':
         txtmessage= ''
@@ -205,6 +237,7 @@ def deleteuserpayment(request):
 
 
 @require_http_methods(["GET","POST"])
+@login_required(login_url='login')
 def paymenthistory(request,user_payment_id='', user_id=''):
     search = ''
     if request.method == 'POST':
@@ -236,6 +269,7 @@ def paymenthistory(request,user_payment_id='', user_id=''):
 
 
 @require_http_methods(["GET", "POST"])
+@login_required(login_url='login')
 def userpayments(request, user_id=''):
     # filtrar desde listado de usuario los payment user del usuario
     # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar

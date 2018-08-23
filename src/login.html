@@ -76,59 +76,7 @@
             </ul>
             <!-- /.navbar-top-links -->
 
-            <div class="navbar-default sidebar" role="navigation">
-                <div class="sidebar-nav navbar-collapse">
-                    <ul class="nav" id="side-menu">
 
-                        <li>
-                            <a href="{% url 'home' %}"><i class="fa fa-dashboard fa-fw"></i> Home</a>
-                        </li>
-                        <li>
-                            <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> User Payments <span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level">
-                                <li>
-                                    <a href="{% url 'userpayments' %}">Activos</a>
-                                </li>
-                                 <li>
-                                    <a href="{% url 'userpaymentdesactivated' %}"> Desactivados</a>
-                                </li>
-
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-
-
-                        <li>
-                            <a href="#"><i class="fa fa-user fa-fw"></i> Users<span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level">
-                                <li>
-                                    <a href="{% url 'users' %}">Activos</a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'listusersexpire' %}">Expirados</a>
-                                </li>
-
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-
-
-                        <li>
-                            <a href="#"><i class="glyphicon glyphicon-time"></i> Payment History<span class="fa arrow"></span></a>
-                            <ul class="nav nav-second-level">
-                                <li>
-                                    <a href="{% url 'paymenthistory' %}">Listado</a>
-                                </li>
-
-                            </ul>
-                            <!-- /.nav-second-level -->
-                        </li>
-
-
-                    </ul>
-                </div>
-                <!-- /.sidebar-collapse -->
-            </div>
             <!-- /.navbar-static-side -->
         </nav>
 
