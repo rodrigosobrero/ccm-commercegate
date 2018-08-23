@@ -22,6 +22,7 @@ from datetime import datetime
 
 
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Response Codes
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -34,6 +35,7 @@ http_NOT_ALLOWED          = 405
 http_UNAUTHORIZED         = 401
 http_PAYMENT_REQUIRED     = 402
 http_INTERNAL_ERROR       = 500
+LIST_ROWS_DISPLAY         = 20
 
 STATUS_USER_PAYMENT = (('PE', 'Pending'),
           ('AC', 'Active'),
@@ -68,13 +70,23 @@ def users(request):
     #agregar mensaje de confirmacion
     search = ''
     if request.method == 'GET':
-        users = User.objects.filter(expiration=None)
+        fecha = datetime.today()
+        users = User.objects.filter(Q(expiration__gt=fecha) | Q(expiration=None))
 
     if request.method == 'POST':
         if request.POST.has_key('search'):
             search = request.POST['search']
-            users = User.objects.filter(Q(user_id__icontains=search)).filter(expiration=None).order_by('-user_id')
+            users = User.objects.filter(Q(user_id__icontains=search)).filter(Q(expiration__gt=fecha) | Q(expiration=None)).order_by('-user_id')
 
+
+    paginator = Paginator(users, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        users = paginator.page(1)
+    except EmptyPage:
+        users = paginator.page(paginator.num_pages)
 
     context = {'registros':users, 'search':search }
     return render(request, 'payapp/views/users/list.html', context)
@@ -87,14 +99,23 @@ def listusersexpire(request):
     fecha = datetime.today()
 
     if request.method == 'GET':
-
+        fecha = datetime.today()
         users = User.objects.filter(Q(expiration__lt=fecha)| Q(expiration=None))
+
 
     if request.method == 'POST':
         if request.POST.has_key('search'):
             search = request.POST['search']
             users = User.objects.filter(Q(user_id__icontains=search)).filter(expiration__gte=fecha).order_by('-user_id')
 
+    paginator = Paginator(users, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        users = paginator.page(1)
+    except EmptyPage:
+        users = paginator.page(paginator.num_pages)
 
     context = {'registros':users ,'search':search}
     return render(request, 'payapp/views/users/listexpires.html', context)
@@ -105,15 +126,18 @@ def listusersexpire(request):
 @require_http_methods(["GET","POST"])
 def expireuser(request):
         if request.is_ajax():
+            if request.method == 'GET':
+                fecha = datetime.today()
+                users = User.objects.filter(Q(expiration__lt=fecha) | Q(expiration=None))
+
             if request.method == 'POST':
                 try:
-                    print 'Ingreso'
                     json_data = json.loads(request.body)
-                    user_id = json_data['user_id']
-                    user = User.objects.get(user_id=user_id)
-                    fecha = datetime.today()
-                    d = timedelta(days=1)
-                    fecha -= d
+                    user_id   = json_data['user_id']
+                    user      = User.objects.get(user_id=user_id)
+                    fecha     = datetime.today()
+                    d         = timedelta(days=1)
+                    fecha    -= d
                     user.expiration = fecha
                     user.save()
                     messages.success(request, 'Usuario Desactivado Correctamente!')
@@ -141,8 +165,17 @@ def userpaymentdesactivated(request):
             search = request.POST['search']
             userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=False).order_by('-user_id')
 
+    registros = userpayments
+    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        registros = paginator.page(page)
+    except PageNotAnInteger:
+        registros = paginator.page(1)
+    except EmptyPage:
+        registros = paginator.page(paginator.num_pages)
 
-    context = {'registros':userpayments,'search':search,'status': dict(STATUS_USER_PAYMENT)}
+    context = {'registros':registros,'search':search,'status': dict(STATUS_USER_PAYMENT)}
     return render(request, 'payapp/views/userpayments/listdesactivated.html', context)
 
 
@@ -187,7 +220,17 @@ def paymenthistory(request,user_payment_id='', user_id=''):
         else:
             paymenthistories = PaymentHistory.objects.all()
 
-    context = {'registros': paymenthistories,'search':search, 'status': dict(STATUS_PAYMENT_HISTORY)}
+    registros = paymenthistories
+    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        registros = paginator.page(page)
+    except PageNotAnInteger:
+        registros = paginator.page(1)
+    except EmptyPage:
+        registros = paginator.page(paginator.num_pages)
+
+    context = {'registros': registros,'search':search, 'status': dict(STATUS_PAYMENT_HISTORY)}
     return render(request, 'payapp/views/paymentshistory/list.html', context)
 
 
@@ -205,7 +248,6 @@ def userpayments(request, user_id=''):
                 enabled=True).order_by('-user_id')
 
     if request.method == 'GET':
-        print 'user_id' + user_id
         if user_id != '':
             try:
                 user = User.objects.get(user_id=user_id)
@@ -217,9 +259,17 @@ def userpayments(request, user_id=''):
         else:
             userpayments = UserPayment.objects.filter(enabled=True)
 
+    registros = userpayments
+    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        registros = paginator.page(page)
+    except PageNotAnInteger:
+        registros = paginator.page(1)
+    except EmptyPage:
+        registros = paginator.page(paginator.num_pages)
 
-
-    context = {'registros': userpayments, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
+    context = {'registros': registros, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
     return render(request, 'payapp/views/userpayments/list.html', context)
 
     #INTERFAZ HTML
