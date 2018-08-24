@@ -129,7 +129,7 @@ def listusersexpire(request):
 
     if request.method == 'GET':
         fecha = datetime.today()
-        users = User.objects.filter(Q(expiration__lt=fecha)| Q(expiration=None))
+        users = User.objects.filter(Q(expiration__lt=fecha)| (~Q(expiration=None)))
 
 
     if request.method == 'POST':
