@@ -2,25 +2,23 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <h4 class="page-header"> UserPayments (Desactivados)</h4>
+        <h4 class="page-header">Listado de Usuarios (Activos)</h4>
     </div>
     <!-- /.col-lg-12 -->
 </div>
 
     <div class="row">
         <div class="col-xs-12 col-sm-12">
+
         <div class="panel panel-default">
 
-
-
-
-             <div class="panel-body">
+              <div class="panel-body">
                 <div class="row">
                   <div class="col-lg-6">
-                      <form method="POST" action="{% url 'userpaymentdesactivated' %}">
+                      <form method="POST" action="{% url 'usersactives' %}">
                             <div class="input-group">
                               <span class="input-group-btn">
-                                  <a class="btn btn-default" href="{% url 'userpaymentdesactivated' %}"><i class="glyphicon glyphicon-th-list"></i> Mostrar Todos</a>
+                                  <a class="btn btn-default" href="{% url 'usersactives' %}"><i class="glyphicon glyphicon-th-list"></i> Mostrar Todos</a>
                                 <button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-filter"></i> Buscar</button>
 
                               </span>
@@ -31,7 +29,7 @@
                 </div><!-- /.row -->
 
 
-                <div class="row">
+              <div class="row">
                 <div class="col-xs-6 col-sm-6">
                 {% if search %}
                 <div class="alert alert-success alert-dismissible" role="default" style="list-style-type: none;">
@@ -41,56 +39,46 @@
                 {% endif %}
                 </div>
             </div>
-                 <br>
+
+          <br>
+
             <table class="table table-bordered">
 
 
                     <thead>
-                        <th>UserPaymentID</th>
-                        <th>User</th>
-                        <th>Amount</th>
-                        <th>Currency</th>
-                        <th>PaymentDate</th>
-                        <th>PayDay</th>
-                        <th>Recurrence</th>
-
-                        <th>Status</th>
+                        <th>User ID</th>
+                        <th>Email</th>
+                        <th>Country</th>
+                        <th>Expiration</th>
 
                         <th>Acciones</th>
                     </thead>
                    <tbody>
                     {% for item in registros %}
                     <tr>
-                        <td>{{ item.user_payment_id }}</td>
-                        <td>{{ item.user.user_id }}</td>
-                        <td>{{ item.amount }}</td>
-                        <td>{{ item.currency }}</td>
-                        <td>{{ item.payment_date|date:'d/m/Y' }}</td>
-                        <td>{{ item.payday }}</td>
-                        <td>{{ item.recurrence }}</td>
-                        <td>
-                             {% for key, i in status.items %}
-                                {% if key == item.status %}
-                                   {{ i }}
-                                {% endif %}
-                             {% endfor %}
+                        <td>{{ item.user_id }}</td>
+                        <td>{{ item.email }}</td>
+                        <td>{{ item.country.name }}</td>
+
+                        <td name="td_expiration" data-id="{{ item.user_id}}">
+                            {{ item.expiration|date:'d/m/Y' }}
                         </td>
+
                         <td>
+                            <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
 
+                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
 
-
-            <a href="/ui/paymenthistory/{{item.user_payment_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-time"></i> HistoryPayments </a>
-        </td>
-    </tr>
+                        </td>
+                    </tr>
                    {% endfor %}
                    </tbody>
                    </table>
 
 
-
         <nav aria-label="Page navigation">
           <ul class="pagination">
-               {% if registros.has_previous %}
+                   {% if registros.has_previous %}
                   <li>
                       <a href="?page={{ registros.previous_page_number }}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
@@ -112,7 +100,6 @@
 
 
 
-
                {% if registros.has_next %}
                 <li>
                   <a href="?page={{ registros.next_page_number }}" aria-label="Next">
@@ -128,11 +115,72 @@
             {% endif %}
           </ul>
         </nav>
-         <ol class="breadcrumb">
+        <ol class="breadcrumb">
             <li><p class="navbar-text navbar-right">Total de Registros: {{ registros.paginator.count }}</p>   </li>
         </ol>
         </div>
         </div>
     </div>
+</div>
 
+
+
+<script>
+    $(document).ready(function() {
+
+        $(".btn.btn-default.expirar").click(function(){
+                var registro = $(".btn.btn-default.expirar");
+                var user_id = registro.attr("data-id");
+
+                if(confirm("¿Seguro desea expirar el Usuario?")){
+                    expirar(user_id);
+                };
+
+
+        });
+
+        function expirar(user_id){
+
+                url = "/ui/expireuser"
+                json_data= {
+                        "user_id": user_id,
+                };
+
+
+                $.ajax({
+                    url: url,
+                    dataType: 'json',
+                    type: 'POST',
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify( json_data ),
+                    success: function(response){
+                            respuesta = response.data;
+
+                            //leer el tiempo
+                            //var strselector = "td[name='td_expiration'][data-id="+user_id+"]";
+
+                            window.location.href = "/ui/users/";
+
+
+
+
+
+                        },
+                    error:function(request, status, error){
+
+                        alert(request.responseText);
+
+                    }
+                });
+        };
+
+
+    });
+
+
+
+</script>
 {% endblock %}
+
+
+

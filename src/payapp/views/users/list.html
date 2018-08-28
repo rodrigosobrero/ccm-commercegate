@@ -2,7 +2,7 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <h4 class="page-header">Listado de Usuarios (Activos)</h4>
+        <h4 class="page-header">Listado de Usuarios</h4>
     </div>
     <!-- /.col-lg-12 -->
 </div>
@@ -79,17 +79,26 @@
         <nav aria-label="Page navigation">
           <ul class="pagination">
                {% if registros.has_previous %}
-              <li>
-                  <a href="?page={{ registros.previous_page_number }}" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                  </a>
-                </li>
-              {% else %}
-                 <li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>
-            {% endif %}
-            <li class="active"><a href="#">{{ registros.number }}</a></li>
-                  <span class="sr-only">(current)</span>
-            </li>
+                  <li>
+                      <a href="?page={{ registros.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                      </a>
+                    </li>
+                  {% else %}
+                     <li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>
+                {% endif %}
+
+
+
+
+                {% for i in registros.paginator.page_range %}
+                  {% if registros.number == i %}
+                    <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+                  {% else %}
+                    <li><a href="?page={{ i }}">{{ i }}</a></li>
+                  {% endif %}
+                {% endfor %}
+
 
 
                {% if registros.has_next %}

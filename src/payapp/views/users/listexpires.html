@@ -86,9 +86,20 @@
               {% else %}
                  <li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>
             {% endif %}
-            <li class="active"><a href="#">{{ registros.number }}</a></li>
-                  <span class="sr-only">(current)</span>
-            </li>
+
+
+
+
+                {% for i in registros.paginator.page_range %}
+                  {% if registros.number == i %}
+                    <li class="active"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+                  {% else %}
+                    <li><a href="?page={{ i }}">{{ i }}</a></li>
+                  {% endif %}
+                {% endfor %}
+
+
+
 
 
                {% if registros.has_next %}
