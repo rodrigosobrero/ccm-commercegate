@@ -86,8 +86,11 @@
                         <li>
                             <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> User Payments <span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
+                                 <li>
+                                    <a href="{% url 'userpayments' %}">Todos</a>
+                                </li>
                                 <li>
-                                    <a href="{% url 'userpayments' %}">Activos</a>
+                                    <a href="{% url 'userpaymentsactives' %}">Activos</a>
                                 </li>
                                  <li>
                                     <a href="{% url 'userpaymentdesactivated' %}"> Desactivados</a>
@@ -102,7 +105,10 @@
                             <a href="#"><i class="fa fa-user fa-fw"></i> Users<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 <li>
-                                    <a href="{% url 'users' %}">Activos</a>
+                                    <a href="{% url 'users' %}">Todos</a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'usersactives' %}">Activos</a>
                                 </li>
                                 <li>
                                     <a href="{% url 'listusersexpire' %}">Expirados</a>
