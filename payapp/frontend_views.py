@@ -97,8 +97,39 @@ def home(request):
 @login_required(login_url='login')
 def users(request):
     search = ''
+    fecha = datetime.today()
     if request.method == 'GET':
-        fecha = datetime.today()
+        users = User.objects.all()
+
+    if request.method == 'POST':
+        if request.POST.has_key('search'):
+            search = request.POST['search']
+            users = User.objects.filter(Q(user_id__icontains=search)).order_by('-user_id')
+
+
+    paginator = Paginator(users, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        users = paginator.page(page)
+    except PageNotAnInteger:
+        users = paginator.page(1)
+    except EmptyPage:
+        users = paginator.page(paginator.num_pages)
+
+    context = {'registros':users, 'search':search }
+    return render(request, 'payapp/views/users/list.html', context)
+
+
+
+
+
+@require_http_methods(["GET","POST"])
+@login_required(login_url='login')
+def usersactives(request):
+    search = ''
+    fecha = datetime.today()
+
+    if request.method == 'GET':
         users = User.objects.filter(Q(expiration__gt=fecha) | Q(expiration=None))
 
     if request.method == 'POST':
@@ -117,7 +148,10 @@ def users(request):
         users = paginator.page(paginator.num_pages)
 
     context = {'registros':users, 'search':search }
-    return render(request, 'payapp/views/users/list.html', context)
+    return render(request, 'payapp/views/users/listactives.html', context)
+
+
+
 
 
 
@@ -128,14 +162,13 @@ def listusersexpire(request):
     fecha = datetime.today()
 
     if request.method == 'GET':
-        fecha = datetime.today()
         users = User.objects.filter(Q(expiration__lt=fecha)| (~Q(expiration=None)))
 
 
     if request.method == 'POST':
         if request.POST.has_key('search'):
             search = request.POST['search']
-            users = User.objects.filter(Q(user_id__icontains=search)).filter(expiration__gte=fecha).order_by('-user_id')
+            users = User.objects.filter(Q(user_id__icontains=search)).filter(expiration__lt=fecha).order_by('-user_id')
 
     paginator = Paginator(users, LIST_ROWS_DISPLAY)
     page = request.GET.get('page')
@@ -211,6 +244,7 @@ def userpaymentdesactivated(request):
 
 
 
+
 @require_http_methods(["GET","POST"])
 @login_required(login_url='login')
 def deleteuserpayment(request):
@@ -268,9 +302,49 @@ def paymenthistory(request,user_payment_id='', user_id=''):
 
 
 
+
 @require_http_methods(["GET", "POST"])
 @login_required(login_url='login')
 def userpayments(request, user_id=''):
+    # filtrar desde listado de usuario los payment user del usuario
+    # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
+    search = ''
+    if request.method == 'POST':
+        if request.POST.has_key('search'):
+            search = request.POST['search']
+            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).order_by('-user_id')
+
+    if request.method == 'GET':
+        if user_id != '':
+            try:
+                user = User.objects.get(user_id=user_id)
+                userpayments = UserPayment.objects.filter(user=user)
+                search = user_id
+            except Exception as e:
+                messages.success(request, 'No existe el Usuario')
+                userpayments = UserPayment.objects.all()
+        else:
+            userpayments = UserPayment.objects.all()
+
+    registros = userpayments
+    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
+    page = request.GET.get('page')
+    try:
+        registros = paginator.page(page)
+    except PageNotAnInteger:
+        registros = paginator.page(1)
+    except EmptyPage:
+        registros = paginator.page(paginator.num_pages)
+
+    context = {'registros': registros, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
+    return render(request, 'payapp/views/userpayments/list.html', context)
+
+
+
+
+@require_http_methods(["GET", "POST"])
+@login_required(login_url='login')
+def userpaymentsactives(request, user_id=''):
     # filtrar desde listado de usuario los payment user del usuario
     # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
     search = ''
@@ -304,6 +378,5 @@ def userpayments(request, user_id=''):
         registros = paginator.page(paginator.num_pages)
 
     context = {'registros': registros, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
-    return render(request, 'payapp/views/userpayments/list.html', context)
+    return render(request, 'payapp/views/userpayments/listactives.html', context)
 
-    #INTERFAZ HTML
