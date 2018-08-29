@@ -130,7 +130,7 @@ def usersactives(request):
     fecha = datetime.today()
 
     if request.method == 'GET':
-        users = User.objects.filter(Q(expiration__gt=fecha) | Q(expiration=None))
+        users = User.objects.filter(expiration__gte=fecha)
 
     if request.method == 'POST':
         if request.POST.has_key('search'):
@@ -162,8 +162,7 @@ def listusersexpire(request):
     fecha = datetime.today()
 
     if request.method == 'GET':
-        users = User.objects.filter(Q(expiration__lt=fecha)| (~Q(expiration=None)))
-
+        users = User.objects.filter(Q(expiration__lt=fecha)| (Q(expiration=None)))
 
     if request.method == 'POST':
         if request.POST.has_key('search'):
