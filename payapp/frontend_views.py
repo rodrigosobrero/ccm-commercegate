@@ -1,6 +1,7 @@
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Django
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+from django.db.models.functions import Lower
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect
 from datetime import timedelta
@@ -277,15 +278,15 @@ def paymenthistory(request,user_payment_id='', user_id=''):
     if request.method == 'POST':
         if request.POST.has_key('search'):
             search = request.POST['search']
-            paymenthistories = PaymentHistory.objects.filter(Q(user_payment__user_payment_id__icontains=search) | Q(payment_id__icontains=search)).order_by('-id')
+            paymenthistories = PaymentHistory.objects.filter(Q(user_payment__user_payment_id__icontains=search) | Q(payment_id__icontains=search)).order_by('-creation_date')
 
     if request.method == 'GET':
         if user_payment_id != '':
             user_payment     = UserPayment.objects.get(user_payment_id = user_payment_id)
-            paymenthistories = PaymentHistory.objects.filter(user_payment = user_payment)
+            paymenthistories = PaymentHistory.objects.filter(user_payment = user_payment).order_by('-creation_date')
             search = user_payment_id
         else:
-            paymenthistories = PaymentHistory.objects.all()
+            paymenthistories = PaymentHistory.objects.all().order_by('-creation_date')
 
     registros = paymenthistories
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
@@ -303,28 +304,39 @@ def paymenthistory(request,user_payment_id='', user_id=''):
 
 
 
+
 @require_http_methods(["GET", "POST"])
 @login_required(login_url='login')
 def userpayments(request, user_id=''):
     # filtrar desde listado de usuario los payment user del usuario
     # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
+    order_by = request.GET.get('order_by')
+    direction = request.GET.get('direction')
+    ordering  = order_by
+    if direction == 'desc':
+        ordering = '-{}'.format(ordering)
+
+
+
     search = ''
     if request.method == 'POST':
         if request.POST.has_key('search'):
             search = request.POST['search']
-            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).order_by('-user_id')
+            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).order_by('-modification_date')
 
     if request.method == 'GET':
+        #user_id se usa para cuando se accede desde el listado de Users
         if user_id != '':
             try:
                 user = User.objects.get(user_id=user_id)
-                userpayments = UserPayment.objects.filter(user=user)
+                userpayments = UserPayment.objects.filter(user=user).order_by('-modification_date')
                 search = user_id
             except Exception as e:
                 messages.success(request, 'No existe el Usuario')
-                userpayments = UserPayment.objects.all()
+                userpayments = UserPayment.objects.all().order_by('-modification_date')
         else:
-            userpayments = UserPayment.objects.all()
+            if ordering:
+                userpayments = UserPayment.objects.all().order_by(ordering)
 
     registros = userpayments
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
@@ -352,8 +364,7 @@ def userpaymentsactives(request, user_id=''):
         if request.POST.has_key('search'):
             search = request.POST['search']
             userpayments = UserPayment.objects.filter(
-                Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(
-                enabled=True).order_by('-user_id')
+                Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=True).order_by('-user_id')
 
     if request.method == 'GET':
         if user_id != '':

@@ -65,8 +65,9 @@
                         </td>
 
                         <td>
+                            {% if item.expiration == none %}
                             <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
-
+                            {% endif%}
                             <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
 
                         </td>

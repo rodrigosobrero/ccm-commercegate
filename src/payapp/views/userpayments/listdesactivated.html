@@ -50,6 +50,7 @@
                         <th>User</th>
                         <th>Amount</th>
                         <th>Currency</th>
+                        <th>Modification Date</th>
                         <th>PaymentDate</th>
                         <th>PayDay</th>
                         <th>Recurrence</th>
@@ -65,6 +66,7 @@
                         <td>{{ item.user.user_id }}</td>
                         <td>{{ item.amount }}</td>
                         <td>{{ item.currency }}</td>
+                        <td>{{ item.modification_date|date:'d/m/Y' }}</td>
                         <td>{{ item.payment_date|date:'d/m/Y' }}</td>
                         <td>{{ item.payday }}</td>
                         <td>{{ item.recurrence }}</td>

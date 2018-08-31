@@ -190,6 +190,8 @@ class UserPayment(models.Model):
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
+
+
     def __unicode__(self):
         return self.user_payment_id
         

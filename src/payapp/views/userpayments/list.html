@@ -44,16 +44,32 @@
 
 
                     <thead>
-                        <th>UserPaymentID</th>
-                        <th>User</th>
-                        <th>Amount</th>
+                        <th>UserPaymentID <a href="?order_by=user_payment_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                          <a href="?order_by=user_payment_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+
+                        <th>User
+                            <a href="?order_by=user_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=user_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+
+                        </th>
+                        <th>Amount
+                            <a href="?order_by=amount&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=amount&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
                         <th>Currency</th>
-                        <th>PaymentDate</th>
+                        <th>Modification Date
+                            <a href="?order_by=modification_date&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=modification_date&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+                        <th>Payment Date</th>
                         <th>PayDay</th>
                         <th>Recurrence</th>
-
-                        <th>Status</th>
-
+                        <th>Status
+                         <a href="?order_by=status&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=status&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+                        <th>Message</th>
                         <th>Acciones</th>
                     </thead>
                    <tbody>
@@ -63,6 +79,7 @@
                         <td>{{ item.user.user_id }}</td>
                         <td>{{ item.amount }}</td>
                         <td>{{ item.currency }}</td>
+                        <td>{{ item.modification_date|date:'d/m/Y' }}</td>
                         <td>{{ item.payment_date|date:'d/m/Y' }}</td>
                         <td>{{ item.payday }}</td>
                         <td>{{ item.recurrence }}</td>
@@ -72,49 +89,53 @@
                                    {{ i }}
                                 {% endif %}
                              {% endfor %}
-
                         </td>
+                        <td>{{ item.message }}</td>
+
+
                         <td>
 
+                {% if item.status != 'CA' %}
+                    <!-- Formulario modal 1526734142 -->
+                    <!-- Button trigger modal -->
+                    <button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#eliminar{{item.id}}">
+                      <i class="glyphicon glyphicon-trash"></i> Desactivar
+                    </button>
 
-<!-- Formulario modal 1526734142 -->
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#eliminar{{item.id}}">
-  <i class="glyphicon glyphicon-trash"></i> Desactivar
-</button>
+                    <!-- Modal -->
+                    <div class="modal fade" id="eliminar{{item.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel"> Desactivar UserPayment</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                <form method="post" action="/ui/deleteuserpayment/" class="formulario" >
+                                    <input type ="hidden" name="userpayment_id" value="{{item.id}}"/>
+                                        <div class="form-group">
+                                        <label for="txtmessage">Message</label>
+                                        <textarea class="form-control" id="txtmessage" name ="txtmessage" rows="3"></textarea>
+                                      </div>
 
-<!-- Modal -->
-<div class="modal fade" id="eliminar{{item.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel"> Desactivar UserPayment</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <form method="post" action="/ui/deleteuserpayment/" class="formulario" >
-                <input type ="hidden" name="userpayment_id" value="{{item.id}}"/>
-                    <div class="form-group">
-                    <label for="txtmessage">Message</label>
-                    <textarea class="form-control" id="txtmessage" name ="txtmessage" rows="3"></textarea>
-                  </div>
-
-                  <div class="modal-footer">
-                    <button type="button" class="btn  btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger" >Desactivar</button>
+                                      <div class="modal-footer">
 
 
-                  </div>
-            </form>
+                                        <button type="button" class="btn  btn-secondary" data-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger" >Desactivar</button>
 
 
-        </div>
-      </div>
-      </div>
-</div>
+                                      </div>
+                                </form>
 
+
+                            </div>
+                          </div>
+                          </div>
+                    </div>
+                {% endif %}
 
             <a href="/ui/paymenthistory/{{item.user_payment_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-time"></i> HistoryPayments </a>
 
