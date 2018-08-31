@@ -336,6 +336,8 @@ def userpayments(request, user_id=''):
         else:
             if ordering:
                 userpayments = UserPayment.objects.all().order_by(ordering)
+            else:
+                userpayments = UserPayment.objects.all()
 
     registros = userpayments
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
