@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from datetime import datetime
+from datetime import datetime, date
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
@@ -112,6 +112,11 @@ class User(models.Model):
     expiration        = models.DateField(blank=True, null=True, help_text="Expiration date")
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    @property
+    def is_active(self):
+        return self.expiration > date.today()
+
 
     def __unicode__(self):
         return self.user_id
