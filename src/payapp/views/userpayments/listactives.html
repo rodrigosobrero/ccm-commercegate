@@ -44,16 +44,31 @@
 
 
                     <thead>
-                        <th>UserPaymentID</th>
-                        <th>User</th>
-                        <th>Amount</th>
+                       <th>UserPaymentID <a href="?order_by=user_payment_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                          <a href="?order_by=user_payment_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+
+                        <th>User
+                            <a href="?order_by=user__user_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=user__user_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+
+                        </th>
+                        <th>Amount
+                            <a href="?order_by=amount&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=amount&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
                         <th>Currency</th>
-                        <th>Modification Date</th>
-                        <th>PaymentDate</th>
+                        <th>Modification Date
+                            <a href="?order_by=modification_date&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=modification_date&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+                        <th>Payment Date</th>
                         <th>PayDay</th>
                         <th>Recurrence</th>
-
-                        <th>Status</th>
+                        <th>Status
+                         <a href="?order_by=status&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=status&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
 
                         <th>Acciones</th>
                     </thead>

@@ -46,9 +46,17 @@
 
 
                     <thead>
-                        <th>User ID</th>
-                        <th>Email</th>
-                        <th>Country</th>
+                        <th>User ID <a href="?order_by=user_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                    <a href="?order_by=user_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+
+                        <th>Email <a href="?order_by=email&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                    <a href="?order_by=email&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
+
+                        <th>Country <a href="?order_by=country__name&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                    <a href="?order_by=country__name&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
                         <th>Expiration</th>
 
                         <th>Acciones</th>
@@ -65,8 +73,9 @@
                         </td>
 
                         <td>
-                            <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
-
+                            {% if item.is_active %}
+                                <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
+                            {% endif %}
                             <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
 
                         </td>
