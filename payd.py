@@ -25,13 +25,12 @@ from payapp.models import PaymentHistory
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import json
 from datetime import datetime
-from time import mktime
-from time import time
+from datetime import timedelta
 
-from payapp.paymentez import PaymentezGateway
-from payapp.paymentez import PaymentezTx
+
 from payapp.misc import paymentez_translator
 from payapp.misc import paymentez_intercom_metadata
+from payapp.misc import make_payment
 
 from payapp.intercom import Intercom
 
@@ -65,7 +64,7 @@ def load_settings():
 
     return settings
 
-
+"""
 def get_card(user):
     try:
         card = Card.objects.get(user=user, enabled=True)
@@ -79,128 +78,7 @@ def get_card(user):
         return None
 
     return card
-
-
-def paymentez_payment(up, card):
-    try:
-        gw = PaymentezGateway(IntegratorSetting.get_var(card.integrator,'paymentez_server_application_code'),
-                              IntegratorSetting.get_var(card.integrator,'paymentez_server_app_key'),
-                              IntegratorSetting.get_var(card.integrator,'paymentez_endpoint'))
-    except Exception as e:
-        msg = "could not create user payment: (%s)" % str(e)
-        up.error(msg)
-        logging.error("paymentez_payment(): %s" % msg)
-        return False
-
-    # Aplico descuento si corresponde
-    disc_flag = False
-    if up.disc_counter > 0:
-        disc_flag = True
-        disc_pct  = up.disc_pct
-        logging.info("paymentez_payment(): Calculating discount.")
-    else:
-        disc_pct = 0
-
-    # Genero tx id sumando al userid el timestamp
-    payment_id = "PH_%s_%d" % (up.user.user_id, int(time.time()))
-
-    # Creo el registro en PaymentHistory
-    ph = PaymentHistory.create(up, card, payment_id, card.integrator, disc_pct)
-    logging.info("paymentez_payment(): Payment history created. ID: %s" % ph.payment_id)
-
-
-    # Realizo el pago si amount mayor a 0
-    if ph.amount > 0:
-        try:
-            logging.info("paymentez_payment(): Executing payment - User: %s - email: %s - "
-                         "card: %s - payment_id: %s" % (up.user.user_id, up.user.email, card.token, ph.payment_id))
-            ret, content = gw.doPost(PaymentezTx(up.user.user_id, up.user.email, ph.amount, 'HotGo',
-                                             ph.payment_id, ph.taxable_amount, ph.vat_amount, card.token))
-        except Exception as e:
-            logging.info("paymentez_payment(): Communication error. New PaymentHistory status: Waiting Callback")
-            # Pongo el pago en Waiting Callback
-            ph.status = "W"
-            ph.save()
-            return False
-    else:
-        ret = True
-        content = {'transaction': {'status_detail':'-10', 'id':'-10', 'message': 'Pago con descuento del 100%'}}
-        pr  = paymentez_translator(content)
-
-    if ret:
-        # Obtengo los valores segun la respuesta de Paymentez
-        pr = paymentez_translator(content)
-        # Seteo los valores de la UserPayment
-        logging.info("paymentez_payment(): Setting UserPayment values: status: %s - enabled: %s - message: %s"
-                     % (pr["up_status"], str(pr["up_recurrence"]), pr["up_recurrence"]))
-        up.status  = pr["up_status"]
-        up.message = pr["up_message"]
-        up.enabled = pr["up_recurrence"]
-
-        if up.status == 'AC':
-            # calcular next_payment_day
-            up.payment_date = up.calc_payment_date()
-            # Fija la fecha de expiration del usuario
-            logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
-            up.user.set_expiration(up.payment_date)
-            if disc_flag:
-                up.disc_counter = up.disc_counter - 1
-        else:
-            up.channel = 'R'
-        up.save()
-
-        # Seteo los valores del PaymentHistory
-        logging.info("paymentez_payment(): Setting PaymentHistory values: status: %s - gateway_id: %s - message: %s"
-                     % (pr["ph_status"], pr["ph_gatewayid"], pr["ph_message"]))
-        ph.status = pr["ph_status"]
-        ph.gateway_id = pr["ph_gatewayid"]
-        ph.message = pr["ph_message"]
-        ph.save()
-
-        if pr["user_expire"]:
-            logging.info("paymentez_payment(): Disabling user access to %s" % up.user.user_id)
-            up.user.expire()
-
-        if pr["intercom"]["action"]:
-            logging.info("paymentez_payment(): Sending event to Intercom: %s" % pr["intercom"]["event"])
-            ep = Setting.get_var('intercom_endpoint')
-            token = Setting.get_var('intercom_token')
-            try:
-                intercom = Intercom(ep, token)
-                reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
-                                             paymentez_intercom_metadata(content['transaction']))
-                if not reply:
-                    msg = "Intercom error: cannot post the event"
-                    ph.message = "%s - %s" % (ph.message, msg)
-                    logging.info("paymentez_payment(): %s" % msg)
-                    ph.save()
-            except Exception as e:
-                msg = "Intercom error: %s" % str(e)
-                ph.message = "%s - %s" % (ph.message, msg)
-                logging.info("paymentez_payment(): %s" % msg)
-                ph.save()
-
-        logging.info("paymentez_payment(): Payment executed succesfully - UserPayment: %s" % up.user_payment_id)
-
-        return True
-
-    else:
-        message = 'type: %s, help: %s, description: %s' % (content['error']['type'],
-                                                           content['error']['help'],
-                                                           content['error']['description'])
-        up.reply_error(message)
-        ph.error('', content)
-
-        return False
-
-
-def make_payment(up, card):
-    if card.integrator.name == 'paymentez':
-        ret = paymentez_payment(up, card)
-    else:
-        ret = False
-    return ret
-
+"""
 
 def paymentez_callback_checker(integrator):
     timeout = IntegratorSetting.get_var(integrator, 'callback_timeout')
@@ -264,13 +142,13 @@ def payd_main():
                 logging.info("payd_main(): UserPayment %s new status... Pending" % up.user_payment_id)
 
                 # Obtengo la tarjeta habilitada para el usuario
-                card = get_card(up.user)
+                card = up.user.get_card()
                 if card is None:
                     msg = "Error getting card for user %s" % up.user.user_id
                     up.error(msg)
                     continue
 
-                make_payment(up, card)
+                make_payment(up, card, logging)
                 ips = ips - 1
             else:
                 logging.info("payd_main(): Payment slot limit reached. Next execution in %s seconds"

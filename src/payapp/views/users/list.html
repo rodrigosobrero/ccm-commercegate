@@ -44,7 +44,7 @@
             <table class="table table-bordered">
                     <thead>
 
-                        <th>User ID <a href="?order_by=user_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                        <th>ID <a href="?order_by=user_id&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
                                     <a href="?order_by=user_id&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
                         </th>
 
@@ -52,10 +52,13 @@
                                     <a href="?order_by=email&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
                         </th>
 
-                        <th>Country <a href="?order_by=country__name&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                        <th>Pais <a href="?order_by=country__name&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
                                     <a href="?order_by=country__name&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
                         </th>
-                        <th>Expiration</th>
+                        <th>Expiracion <a href="?order_by=expiration&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                                       <a href="?order_by=expiration&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        
+                        </th>
 
                         <th>Acciones</th>
                     </thead>
@@ -74,8 +77,40 @@
 
                             {% if item.is_active  %}
                                 <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
+							{% elif not item.is_active  %}
+								<button type="button" class="btn btn-xs btn-primary" data-toggle="modal" data-target="#enable{{item.user_id}}">
+									<i class="glyphicon glyphicon-ok"></i> Activar
+								</button>
+
+								<!-- Modal -->
+								<div class="modal fade" id="enable{{item.user_id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+									<div class="modal-dialog" role="document">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h5 class="modal-title" id="exampleModalLabel"> Activar Usuario</h5>
+												<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+													<span aria-hidden="true">&times;</span>
+												</button>
+											</div>
+											<div class="modal-body">
+												<form method="post" id="days" action="/ui/activateuser/" class="formulario" >
+													<input type ="hidden" name="user_id" value="{{item.user_id}}"/>
+													<div class="form-group">
+														<label>Dias</label>
+														<input class="form-control" name="days" 
+														type="number" data-bv-integer-message="The value is not an integer" />
+													</div>
+													<div class="modal-footer">
+														<button type="button" class="btn  btn-secondary" data-dismiss="modal">Cancelar</button>
+														<button type="submit" class="btn btn-primary" >Activar</button>
+													</div>
+												</form>
+											</div>
+										</div>
+									</div>
+								</div>
                             {% endif%}
-                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Payments</a>
+                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a>
 
                         </td>
                     </tr>
@@ -145,6 +180,7 @@
                     expirar(user_id);
                 };
 
+		$('#days').bootstrapValidator();
 
         });
 
@@ -185,6 +221,7 @@
 
 
     });
+	
 
 
 

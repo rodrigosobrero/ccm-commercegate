@@ -33,6 +33,42 @@
         <script src="{% static 'vendor/metisMenu/metisMenu.min.js' %}"></script>
         <!-- Custom Theme JavaScript -->
         <script src="{% static 'dist/js/sb-admin-2.js' %}"></script>
+        
+        <style>
+            .message {
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: block;
+                overflow: hidden;
+                width: 15em;
+                border: 0px;
+            }
+
+                        .tooltip-inner {
+                background-color: #555;
+                color: #fff;
+                max-width: 200px !important;
+                word-wrap: break-word
+                
+            }
+
+            .bs-tooltip-top .arrow::before {
+                border-top-color: #555;
+            }
+
+            .bs-tooltip-bottom .arrow::before {
+                border-bottom-color: #555;
+            }
+
+            .bs-tooltip-right .arrow::before {
+                border-right-color: #555;
+            }
+
+            .bs-tooltip-left .arrow::before {
+                border-left-color: #555;
+            }
+
+        </style>
 
 </head>
 
@@ -84,7 +120,7 @@
                             <a href="{% url 'home' %}"><i class="fa fa-dashboard fa-fw"></i> Home</a>
                         </li>
                         <li>
-                            <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> User Payments <span class="fa arrow"></span></a>
+                            <a href="#"><i class="fa fa-bar-chart-o fa-fw"></i> Pagos Recurrentes <span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                  <li>
                                     <a href="{% url 'userpayments' %}">Todos</a>
@@ -92,8 +128,11 @@
                                 <li>
                                     <a href="{% url 'userpaymentsactives' %}">Activos</a>
                                 </li>
-                                 <li>
+                                <li>
                                     <a href="{% url 'userpaymentdesactivated' %}"> Desactivados</a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'userpayment_recurring_error' %}"> Error en Recurrencia</a>
                                 </li>
 
                             </ul>
@@ -102,7 +141,7 @@
 
 
                         <li>
-                            <a href="#"><i class="fa fa-user fa-fw"></i> Users<span class="fa arrow"></span></a>
+                            <a href="#"><i class="fa fa-user fa-fw"></i>  Usuarios<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 <li>
                                     <a href="{% url 'users' %}">Todos</a>
@@ -120,10 +159,13 @@
 
 
                         <li>
-                            <a href="#"><i class="glyphicon glyphicon-time"></i> Payment History<span class="fa arrow"></span></a>
+                            <a href="#"><i class="glyphicon glyphicon-time"></i>  Historial de Pagos<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 <li>
                                     <a href="{% url 'paymenthistory' %}">Listado</a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'paymenthistory_manual' %}">Pagos Manuales</a>
                                 </li>
 
                             </ul>
@@ -197,5 +239,11 @@
 
 
 </body>
+
+<script>
+$(document).ready(function(){
+    $('[data-toggle="tooltip"]').tooltip();   
+});
+</script>
 
 </html>

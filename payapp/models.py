@@ -130,6 +130,15 @@ class User(models.Model):
         us.save()
         return us
     
+    def get_card(self):
+        try:
+            card = Card.objects.get(user=self, enabled=True)
+        except ObjectDoesNotExist:
+            return None
+        except MultipleObjectsReturned:
+            return None
+        return card
+    
     def add_to_expiration(self, days):
         ty, tm, td = timezone.now().strftime("%Y-%m-%d").split("-")
         # Obtengo cantidad de meses a sumar
@@ -152,6 +161,16 @@ class User(models.Model):
         self.expiration = date + timedelta(days=1)
         self.save()
         return self.expiration
+		
+	def enable_for(self, days):
+		self.expiration = timezone.now() + timedelta(days=int(days))
+        self.save()
+        return self.expiration
+
+    def enable_for(self, days):
+        self.expiration = timezone.now() + timedelta(days=int(days))
+        self.save()
+        return self.expiration
 
     def expire(self):
         if self.expiration is not None:
@@ -169,7 +188,8 @@ class UserPayment(models.Model):
     STATUS = (('PE', 'Pending'),
               ('AC', 'Active'),
               ('CA', 'Cancelled'),
-              ('ER', 'Error'))
+              ('ER', 'Error'),
+              ('RE', 'Recurring Error'))
 
     CHANNEL = (('E', ''),
                ('U', 'User'),
@@ -191,6 +211,7 @@ class UserPayment(models.Model):
     status            = models.CharField(max_length=2, choices=STATUS, default='PE', help_text='Payment status')
     channel           = models.CharField(max_length=1, choices=CHANNEL, default='E', help_text='Error or cancellation channel')
     message           = models.CharField(max_length=1024, blank=True)
+    retries           = models.IntegerField(default=0, help_text='Payment retries')
     enabled           = models.BooleanField(default=True)
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
@@ -225,6 +246,13 @@ class UserPayment(models.Model):
         up.enabled      = True
         up.save()
         return up
+        
+    @classmethod
+    def get_by_id(cls, up_id):
+        try:
+            return cls.objects.get(user_payment_id=up_id)
+        except ObjectDoesNotExist:
+            return None
     
     def discount(self, discount, disc_counter):
         self.disc_pct     = discount
@@ -258,6 +286,13 @@ class UserPayment(models.Model):
         self.channel = 'R'
         self.save()
 
+    def reply_recurrence_error(self, message=''):
+        self.status  = 'RE'
+        self.message = message
+        self.enabled = False
+        self.channel = 'R'
+        self.save()    
+        
     def callback_error(self, message=''):
         self.status  = 'ER'
         self.message = message
@@ -314,6 +349,11 @@ class UserPayment(models.Model):
         self.payment_date = datetime(year, month, int(self.payday))
         #self.save()
         return self.payment_date
+        
+    def add_retry(self):
+        self.retries = self.retries + 1
+        self.save()
+        return self
 
 
 class Card(models.Model):
@@ -381,6 +421,7 @@ class PaymentHistory(models.Model):
     disc_pct          = models.IntegerField(default=0, help_text="Discount percentage")
     message           = models.CharField(max_length=2048, blank=True)
     integrator        = models.ForeignKey(Integrator, blank=True, null=True)
+    manual            = models.BooleanField(default=False, help_text='True if manual payment')
     creation_date     = models.DateTimeField(auto_now_add=True)
     modification_date = models.DateTimeField(auto_now=True, blank=True, null=True)
 
@@ -409,7 +450,7 @@ class PaymentHistory(models.Model):
 
 
     @classmethod
-    def create(cls, user_payment, card, payment_id, integrator, disc_pct=0 ,gateway_id='', status='P'):
+    def create(cls, user_payment, card, payment_id, integrator, disc_pct=0, manual=False, gateway_id='', status='P'):
         ph = cls()
         ph.user_payment   = user_payment
         amounts = ph.__amounts_calculator()
@@ -423,6 +464,7 @@ class PaymentHistory(models.Model):
         ph.taxable_amount = amounts['taxable_amount']
         ph.disc_pct       = disc_pct
         ph.integrator     = integrator
+        ph.manual         = manual
         ph.save()
         return ph
 

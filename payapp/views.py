@@ -319,6 +319,10 @@ def create_payment(request):
                 if pr["intercom"]["action"]:
                     ep    = Setting.get_var('intercom_endpoint')
                     token = Setting.get_var('intercom_token')
+                    if user.expiration is not None:
+                        content['transaction']['expire_at'] = mktime(user.expiration.timetuple())
+                    print "CONTENT INTERCOM"
+                    print content
                     try:
                         intercom = Intercom(ep, token)
                         reply = intercom.submitEvent(up.user.user_id, up.user.email, pr["intercom"]["event"],
@@ -471,7 +475,7 @@ def cancel_payment(request):
     try:
         intercom = Intercom(ep, token)
         reply = intercom.submitEvent(up.user.user_id, up.user.email, "cancelled-sub",
-                                     {"paymentez": "recurrencia cancelada por el usuario"})
+                                     {"event_description": "recurrencia cancelada por el usuario"})
         if not reply:
             up.message = "Intercom error: cannot post the event"
             up.save()
