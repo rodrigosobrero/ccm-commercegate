@@ -68,6 +68,10 @@
                          <a href="?order_by=status&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
                             <a href="?order_by=status&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
                         </th>
+                        <th>Reintentos
+                            <a href="?order_by=retries&direction=asc" class="glyphicon glyphicon-arrow-up"></a>
+                            <a href="?order_by=retries&direction=desc" class="glyphicon glyphicon-arrow-down"></a>
+                        </th>
                         <th>Mensaje</th>
                         <th>Acciones</th>
                     </thead>
@@ -88,10 +92,11 @@
                                 {% endif %}
                              {% endfor %}
                         </td>
+                        <td>{{ item.retries }}</td>
                         <td><span class="message" data-toggle="tooltip" data-placement="top" title="{{ item.message }}">{{ item.message }}</span></td>
                         <td>
 
-                {% if item.status != 'CA' %}
+                {% if item.status == 'AC' %}
                     <!-- Formulario modal 1526734142 -->
                     <!-- Button trigger modal -->
                     <button type="button" class="btn btn-xs btn-danger" data-toggle="modal" data-target="#eliminar{{item.id}}">

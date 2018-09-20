@@ -93,12 +93,11 @@
 												</button>
 											</div>
 											<div class="modal-body">
-												<form method="post" id="days" action="/ui/activateuser/" class="formulario" >
+												<form method="post" action="/ui/activateuser/" class="formulario" >
 													<input type ="hidden" name="user_id" value="{{item.user_id}}"/>
 													<div class="form-group">
 														<label>Dias</label>
-														<input class="form-control" name="days" 
-														type="number" data-bv-integer-message="The value is not an integer" />
+														<input class="form-control" name="days" type="number" step="1" min="0" max="365" required/>
 													</div>
 													<div class="modal-footer">
 														<button type="button" class="btn  btn-secondary" data-dismiss="modal">Cancelar</button>
@@ -110,8 +109,8 @@
 									</div>
 								</div>
                             {% endif%}
-                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a>
-
+                            <!--a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a-->
+                            <a href="/ui/userpayments/?user_id={{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a>
                         </td>
                     </tr>
                    {% endfor %}
@@ -179,10 +178,6 @@
                 if(confirm("¿Seguro desea expirar el Usuario?")){
                     expirar(user_id);
                 };
-
-		$('#days').bootstrapValidator();
-
-        });
 
         function expirar(user_id){
 

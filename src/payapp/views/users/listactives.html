@@ -78,7 +78,7 @@
                             {% if item.is_active %}
                                 <div class="btn btn-xs btn-default expirar"  data-id="{{ item.user_id }}"><i class="glyphicon glyphicon-hourglass"></i> Expirar</div>
                             {% endif %}
-                            <a href="/ui/userpayments/{{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a>
+                            <a href="/ui/userpayments/?user_id={{item.user_id}}" class="btn btn-xs btn-default"><i class="glyphicon glyphicon-credit-card"></i> Recurrencias</a>
 
                         </td>
                     </tr>

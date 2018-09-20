@@ -299,7 +299,6 @@ def activateuser(request):
 def paymenthistory(request,user_payment_id='', user_id=''):
     search = ''
 
-
     if request.method == 'GET':
         order_by  = request.GET.get('order_by')
         direction = request.GET.get('direction')
@@ -335,6 +334,10 @@ def paymenthistory(request,user_payment_id='', user_id=''):
                 ph.description = data['transaction']['message']
             if 'authorization_code' in data['transaction']:
                 ph.code = data['transaction']['authorization_code']
+        
+        if 'card' in data:
+            if 'number' in data['card']:
+                ph.card_number = "XXXX-XXXX-XXXX-%s" % data['card']['number']
                         
     registros = paymenthistories
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
@@ -352,7 +355,7 @@ def paymenthistory(request,user_payment_id='', user_id=''):
 	
 @require_http_methods(["GET","POST"])
 @login_required(login_url='login')
-def paymenthistory_manual(request,user_payment_id='', user_id=''):
+def paymenthistory_manual(request, user_payment_id='', user_id=''):
     search = ''
 
 
@@ -391,6 +394,10 @@ def paymenthistory_manual(request,user_payment_id='', user_id=''):
                 ph.description = data['transaction']['message']
             if 'authorization_code' in data['transaction']:
                 ph.code = data['transaction']['authorization_code']
+                
+        if 'card' in data:
+            if 'number' in data['card']:
+                ph.card_number = "XXXX-XXXX-XXXX-%s" % str(data['card']['number'])
 
     registros = paymenthistories
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
@@ -487,7 +494,7 @@ def deleteuserpayment(request):
 
 @require_http_methods(["GET", "POST"])
 @login_required(login_url='login')
-def userpayments(request, user_id=''):
+def userpayments(request):
     # filtrar desde listado de usuario los payment user del usuario
     # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
     fecha = datetime.today()
@@ -505,20 +512,30 @@ def userpayments(request, user_id=''):
             ordering = '-{}'.format(ordering)
 
         #user_id se usa para cuando se accede desde el listado de Users
-        if user_id != '':
+        if 'user_id' in request.GET:
+            user_id = request.GET.get('user_id')
             try:
                 user = User.objects.get(user_id=user_id)
                 userpayments = UserPayment.objects.filter(user=user).order_by('-modification_date')
-                search = user_id
+                search = user
             except Exception as e:
                 messages.success(request, 'No existe el Usuario')
+                userpayments = UserPayment.objects.all().order_by('-modification_date')
+        
+        elif 'userpayment_id' in request.GET:        
+            user_payment_id = request.GET.get('userpayment_id')
+            userpayments = UserPayment.objects.filter(user_payment_id=user_payment_id).order_by('-modification_date')
+            if len(userpayments) > 0:
+                search = user_payment_id
+            else:
+                messages.success(request, 'No existe la recurrencia')
                 userpayments = UserPayment.objects.all().order_by('-modification_date')
         else:
             if ordering:
                 userpayments = UserPayment.objects.all().order_by(ordering)
             else:
                 userpayments = UserPayment.objects.all().order_by('-modification_date')
-
+        
     registros = userpayments
     paginator = Paginator(registros, LIST_ROWS_DISPLAY)
     page = request.GET.get('page')

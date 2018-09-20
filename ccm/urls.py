@@ -49,7 +49,7 @@ urlpatterns = [
 
     url(r'^ui/home/', home, name='home'),
 
-    url(r'^ui/userpayments/(?P<user_id>[\w\-]+)', userpayments, name='userpaymentsfilter'),
+    #url(r'^ui/userpayments/(?P<user_id>[\w\-]+)', userpayments, name='userpaymentsfilter'),
     url(r'^ui/userpayments/', userpayments, name='userpayments'),
     url(r'^ui/userpaymentsactives/', userpaymentsactives, name='userpaymentsactives'),
     url(r'^ui/userpaymentdesactivated', userpaymentdesactivated, name='userpaymentdesactivated'),
