@@ -8,7 +8,6 @@ from django.core.exceptions import ObjectDoesNotExist
 import time
 # Create your models here.
 
-
 class Setting(models.Model):
     TYPES = (('I', 'Integer'),
              ('S', 'String'),
