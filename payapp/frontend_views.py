@@ -487,7 +487,7 @@ def deleteuserpayment(request):
 
         messages.success(request, 'Recurrencia desactivada correctamente!')
 
-        return redirect(userpayments)
+        return redirect(request.META['HTTP_REFERER'])
 
 
 
@@ -673,9 +673,8 @@ def manual_payment(request):
     if pay:
         msg = 'Pago efectuado correctamente para %s' % up.user.user_id
         messages.success(request, msg)
-        return redirect(userpayments)
+        return redirect(request.META['HTTP_REFERER'])
     else:
         messages.success(request, 'Error al realizar el pago: verificar PaymentHistory')
-        return redirect(userpayments)
-    
+        return redirect(request.META['HTTP_REFERER'])
     
