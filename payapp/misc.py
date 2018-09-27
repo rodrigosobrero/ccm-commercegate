@@ -60,7 +60,7 @@ def unicodetoascii(text):
             ord('\xe2\x81\xbe'.decode('utf-8')): ord(")"),
 
                             }
-    return text.decode('utf-8').translate(uni2ascii).encode('ascii')
+    return text.decode('utf-8').translate(uni2ascii).encode('ascii', 'ignore')
 
 
 def paymentez_translator(content):
