@@ -60,7 +60,7 @@ def unicodetoascii(text):
             ord('\xe2\x81\xbe'.decode('utf-8')): ord(")"),
 
                             }
-    return text.decode('utf-8').translate(uni2ascii).encode('ascii', 'ignore')
+    return text.decode('utf-8').translate(uni2ascii).encode('ascii')
 
 
 def paymentez_translator(content):
@@ -71,9 +71,10 @@ def paymentez_translator(content):
         code = "-1"
 
     data = PAYMENTEZ["paymentez"]["codes"][str(code)]
+    content["transaction"]["message"] = unicodetoascii(content["transaction"]["message"].encode('utf-8'))
 
     ret["up_status"]     = data["up_status"]
-    ret["up_message"]    = unicodetoascii(content["transaction"]["message"])
+    ret["up_message"]    = content["transaction"]["message"]
     ret["up_recurrence"] = data["up_recurrence"]
 
     ret["ph_status"]    = data["ph_status"]
