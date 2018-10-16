@@ -181,7 +181,14 @@ class User(models.Model):
             if self.expiration < timezone.now():
                 return True
         return False
-
+    
+    def has_active_recurrence(self):
+        ups = UserPayment.objects.filter(user=self, status='AC')
+        if len(ups) > 0:
+            return True
+        else:
+            return False
+        
 
 class UserPayment(models.Model):
     STATUS = (('PE', 'Pending'),

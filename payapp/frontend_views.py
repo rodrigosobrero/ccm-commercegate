@@ -653,6 +653,11 @@ def manual_payment(request):
         msg = 'Error al realizar el pago: %s no existe' % request.POST['userpayment_id']
         messages.success(request, msg)
         return redirect(userpayments)
+
+    if up.user.has_active_recurrence():
+        msg = 'Error al realizar el pago: el usuario ya posee una recurrencia activa.'
+        messages.success(request, msg)
+        return redirect(request.META['HTTP_REFERER'])
         
     logging.basicConfig(format   = '%(asctime)s - manual_payments -[%(levelname)s]: %(message)s', filename = LOG_FILE, level = logging.INFO)
         
