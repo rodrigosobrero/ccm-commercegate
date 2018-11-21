@@ -5,6 +5,8 @@ from datetime import datetime, date
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import MultipleObjectsReturned
+
 import time
 # Create your models here.
 
@@ -44,6 +46,10 @@ class Currency(models.Model):
     name = models.CharField(max_length=64)
     code = models.CharField(max_length=3)
 
+    # Modificado
+    def natural_key(self):
+        return (self.name)
+
     def __unicode__(self):
         return self.name
 
@@ -54,6 +60,10 @@ class Country(models.Model):
     currency   = models.ForeignKey(Currency)
     tax        = models.FloatField(default=0, help_text="Example: 21% = 1.21")
     full_price = models.BooleanField(default=True, help_text="True if taxes included in price")
+
+    # Modificado
+    def natural_key(self):
+        return (self.name)
 
     def __unicode__(self):
         return self.name
@@ -114,8 +124,13 @@ class User(models.Model):
 
     @property
     def is_active(self):
-        return self.expiration > date.today()
+        if self.expiration is None:
+            return False
+        else:
+            return self.expiration > date.today()
 
+    def natural_key(self):
+        return (self.user_id)
 
     def __unicode__(self):
         return self.user_id
@@ -161,8 +176,8 @@ class User(models.Model):
         self.save()
         return self.expiration
 		
-	def enable_for(self, days):
-		self.expiration = timezone.now() + timedelta(days=int(days))
+    def enable_for(self, days):
+    	self.expiration = timezone.now() + timedelta(days=int(days))
         self.save()
         return self.expiration
 
@@ -184,6 +199,13 @@ class User(models.Model):
     
     def has_active_recurrence(self):
         ups = UserPayment.objects.filter(user=self, status='AC')
+        if len(ups) > 0:
+            return True
+        else:
+            return False
+
+    def has_recurrence(self):
+        ups = UserPayment.objects.filter(user=self)
         if len(ups) > 0:
             return True
         else:

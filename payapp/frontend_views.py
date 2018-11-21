@@ -4,7 +4,7 @@
 from django.db.models.functions import Lower
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect
-from datetime import timedelta
+from datetime import timedelta, date
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core import serializers
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # App Models
@@ -69,8 +70,6 @@ CHANNEL = (('E', ''),
            ('F', 'Refund'),
            ('X', 'Claxson'))
 
-LOG_FILE = Setting.get_var('log_path')
-
 #==========================================INTERFAZ HTML==========================================
 
 def login_view(request):
@@ -81,151 +80,18 @@ def login_view(request):
         if user is not None:
             print 'debuglogin_home'
             login(request, user)
-            return redirect(home)
+            #return redirect(home)
+            return redirect(dashboard)
         else:
             messages.warning(request,'Usuario o Contrasenia Incorrecto')
 
-    return render(request, 'payapp/views/default/login.html', None)
-
-
-
-
+    #return render(request, 'payapp/views/default/login.html', None)
+    return render(request, 'login/login.html', None)
 
 def logout_view(request):
     logout(request)
     # Redirect to a success page.
     return redirect(login_view)
-
-
-@require_http_methods(["GET"])
-@login_required(login_url='login')
-def home(request):
-    context = {}
-    return render(request, 'payapp/views/default/index.html', context)
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def users(request):
-    search = ''
-    fecha = datetime.today()
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            users = User.objects.order_by(ordering)
-        else:
-            users = User.objects.all().order_by('-id')
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            users = User.objects.filter(Q(user_id__icontains=search)).order_by('-id')
-
-
-    paginator = Paginator(users, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        users = paginator.page(page)
-    except PageNotAnInteger:
-        users = paginator.page(1)
-    except EmptyPage:
-        users = paginator.page(paginator.num_pages)
-
-    context = {'registros':users, 'search':search, 'now':fecha }
-    return render(request, 'payapp/views/users/list.html', context)
-
-
-
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def usersactives(request):
-    search = ''
-    fecha = datetime.today()
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            users = User.objects.filter(expiration__gt=fecha).order_by(ordering)
-        else:
-            users = User.objects.all().filter(expiration__gt=fecha).order_by('-id')
-
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            users  = User.objects.filter(Q(user_id__icontains=search)).filter(Q(expiration__gt=fecha)).order_by('-id')
-
-
-    paginator = Paginator(users, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        users = paginator.page(page)
-    except PageNotAnInteger:
-        users = paginator.page(1)
-    except EmptyPage:
-        users = paginator.page(paginator.num_pages)
-
-    context = {'registros':users, 'search':search,'now':fecha }
-    return render(request, 'payapp/views/users/listactives.html', context)
-
-
-
-
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def listusersexpire(request):
-    search = ''
-    fecha = datetime.today()
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            users = User.objects.filter(Q(expiration__lte=fecha) | (Q(expiration=None))).order_by(ordering)
-        else:
-            users = User.objects.filter(Q(expiration__lte=fecha) | (Q(expiration=None))).order_by('-id')
-
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            users = User.objects.filter(Q(user_id__icontains=search)).filter(Q(expiration__lte=fecha) | (Q(expiration=None))).order_by('-id')
-
-    paginator = Paginator(users, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        users = paginator.page(page)
-    except PageNotAnInteger:
-        users = paginator.page(1)
-    except EmptyPage:
-        users = paginator.page(paginator.num_pages)
-
-    context = {'registros':users ,'search':search}
-    return render(request, 'payapp/views/users/listexpires.html', context)
-
-
-
 
 @require_http_methods(["GET","POST"])
 @login_required(login_url='login')
@@ -263,7 +129,6 @@ def expireuser(request):
                 except Exception as e:
                     return JsonResponse({'message': 'Hubo un Error', 'data': e.message},status=500)
         return JsonResponse({ 'message': 'Metodo no permitido', 'data': ''}, status=500)
-
 		
 @require_http_methods(["POST"])
 @login_required(login_url='login')
@@ -291,167 +156,6 @@ def activateuser(request):
 	messages.success(request, "Usuario %s activado correctamente!" % user_id)
 
 	return redirect(users)
-	
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def paymenthistory(request,user_payment_id='', user_id=''):
-    search = ''
-
-    if request.method == 'GET':
-        order_by  = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering  = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            paymenthistories = PaymentHistory.objects.all().order_by(ordering)
-        else:
-            paymenthistories = PaymentHistory.objects.all().order_by('-creation_date')
-
-        if user_payment_id != '':
-            user_payment = UserPayment.objects.get(user_payment_id=user_payment_id)
-            paymenthistories = PaymentHistory.objects.filter(user_payment=user_payment).order_by('-creation_date')
-            search = user_payment_id
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            paymenthistories = PaymentHistory.objects.filter(Q(user_payment__user_payment_id__icontains=search) | Q(payment_id__icontains=search)).order_by('-creation_date')
-
-    for ph in paymenthistories:
-        ph.description = ''
-        ph.code = ''
-        try:
-            data = json.loads(ph.message.replace("'","\"").replace("u\"", "\"").replace("None", "null"))
-        except:
-            continue
-        if 'transaction' in data:
-            if 'message' in data['transaction']:
-                ph.description = data['transaction']['message']
-            if 'authorization_code' in data['transaction']:
-                ph.code = data['transaction']['authorization_code']
-        
-        if 'card' in data:
-            if 'number' in data['card']:
-                ph.card_number = "XXXX-XXXX-XXXX-%s" % data['card']['number']
-                        
-    registros = paymenthistories
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros': registros,'search':search, 'status': dict(STATUS_PAYMENT_HISTORY)}
-    return render(request, 'payapp/views/paymentshistory/list.html', context)
-
-	
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def paymenthistory_manual(request, user_payment_id='', user_id=''):
-    search = ''
-
-
-    if request.method == 'GET':
-        order_by  = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering  = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            paymenthistories = PaymentHistory.objects.filter(manual=True).order_by(ordering)
-        else:
-            paymenthistories = PaymentHistory.objects.filter(manual=True).order_by('-creation_date')
-
-        if user_payment_id != '':
-            user_payment = UserPayment.objects.get(user_payment_id=user_payment_id)
-            paymenthistories = PaymentHistory.objects.filter(user_payment=user_payment).order_by('-creation_date')
-            search = user_payment_id
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            paymenthistories = PaymentHistory.objects.filter(Q(user_payment__user_payment_id__icontains=search) | Q(payment_id__icontains=search)).order_by('-creation_date')
-
-    for ph in paymenthistories:
-        ph.description = ''
-        ph.code = ''
-        try:
-            data = json.loads(ph.message.replace("'","\"").replace("u\"", "\"").replace("None", "none"))
-        except:
-            continue
-        if 'transaction' in data:
-            if 'message' in data['transaction']:
-                ph.description = data['transaction']['message']
-            if 'authorization_code' in data['transaction']:
-                ph.code = data['transaction']['authorization_code']
-                
-        if 'card' in data:
-            if 'number' in data['card']:
-                ph.card_number = "XXXX-XXXX-XXXX-%s" % str(data['card']['number'])
-
-    registros = paymenthistories
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros': registros,'search':search, 'status': dict(STATUS_PAYMENT_HISTORY)}
-    return render(request, 'payapp/views/paymentshistory/listmanual.html', context)
-
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def userpaymentdesactivated(request):
-    search = ''
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            userpayments = UserPayment.objects.filter(enabled=False).order_by(ordering)
-        else:
-            userpayments = UserPayment.objects.filter(enabled=False)
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=False).order_by('-user_id')
-
-    registros = userpayments
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros':registros,'search':search,'status': dict(STATUS_USER_PAYMENT)}
-    return render(request, 'payapp/views/userpayments/listdesactivated.html', context)
-
-
-
 
 @require_http_methods(["GET","POST"])
 @login_required(login_url='login')
@@ -489,157 +193,6 @@ def deleteuserpayment(request):
 
         return redirect(request.META['HTTP_REFERER'])
 
-
-
-
-@require_http_methods(["GET", "POST"])
-@login_required(login_url='login')
-def userpayments(request):
-    # filtrar desde listado de usuario los payment user del usuario
-    # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
-    fecha = datetime.today()
-    search = ''
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).order_by('-modification_date')
-
-    if request.method == 'GET':
-        order_by  = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        #user_id se usa para cuando se accede desde el listado de Users
-        if 'user_id' in request.GET:
-            user_id = request.GET.get('user_id')
-            try:
-                user = User.objects.get(user_id=user_id)
-                userpayments = UserPayment.objects.filter(user=user).order_by('-modification_date')
-                search = user
-            except Exception as e:
-                messages.success(request, 'No existe el Usuario')
-                userpayments = UserPayment.objects.all().order_by('-modification_date')
-        
-        elif 'userpayment_id' in request.GET:        
-            user_payment_id = request.GET.get('userpayment_id')
-            userpayments = UserPayment.objects.filter(user_payment_id=user_payment_id).order_by('-modification_date')
-            if len(userpayments) > 0:
-                search = user_payment_id
-            else:
-                messages.success(request, 'No existe la recurrencia')
-                userpayments = UserPayment.objects.all().order_by('-modification_date')
-        else:
-            if ordering:
-                userpayments = UserPayment.objects.all().order_by(ordering)
-            else:
-                userpayments = UserPayment.objects.all().order_by('-modification_date')
-        
-    registros = userpayments
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros': registros, 'search': search, 'status': dict(STATUS_USER_PAYMENT), 'hoy':fecha}
-    return render(request, 'payapp/views/userpayments/list.html', context)
-
-
-
-
-@require_http_methods(["GET", "POST"])
-@login_required(login_url='login')
-def userpaymentsactives(request, user_id=''):
-    # filtrar desde listado de usuario los payment user del usuario
-    # quitar payday, status mostrar descripcion, cambiar leyenda boton por desactivar
-    search = ''
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=True).order_by('-user_id')
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            userpayments = UserPayment.objects.filter(enabled=True).order_by(ordering)
-        else:
-            userpayments = UserPayment.objects.filter(enabled=True).order_by('-modification_date')
-
-        if user_id != '':
-            try:
-                user = User.objects.get(user_id=user_id)
-                userpayments = UserPayment.objects.filter(user=user).filter(enabled=True)
-                search = user_id
-            except Exception as e:
-                messages.success(request, 'No existe el Usuario')
-                userpayments = UserPayment.objects.filter(enabled=True)
-
-
-
-
-    registros = userpayments
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros': registros, 'search': search, 'status': dict(STATUS_USER_PAYMENT)}
-    return render(request, 'payapp/views/userpayments/listactives.html', context)
-
-
-@require_http_methods(["GET","POST"])
-@login_required(login_url='login')
-def userpayment_recurring_error(request):
-    search = ''
-
-    if request.method == 'GET':
-        order_by = request.GET.get('order_by')
-        direction = request.GET.get('direction')
-        ordering = order_by
-        if direction == 'desc':
-            ordering = '-{}'.format(ordering)
-
-        if ordering:
-            userpayments = UserPayment.objects.filter(status='RE').order_by(ordering)
-        else:
-            userpayments = UserPayment.objects.filter(status='RE').order_by('-modification_date')
-
-
-    if request.method == 'POST':
-        if request.POST.has_key('search'):
-            search = request.POST['search']
-            userpayments = UserPayment.objects.filter(Q(user_payment_id__icontains=search) | Q(user__user_id__icontains=search)).filter(enabled=False).order_by('-user_id')
-
-    registros = userpayments
-    paginator = Paginator(registros, LIST_ROWS_DISPLAY)
-    page = request.GET.get('page')
-    try:
-        registros = paginator.page(page)
-    except PageNotAnInteger:
-        registros = paginator.page(1)
-    except EmptyPage:
-        registros = paginator.page(paginator.num_pages)
-
-    context = {'registros':registros,'search':search,'status': dict(STATUS_USER_PAYMENT)}
-    return render(request, 'payapp/views/userpayments/listrecurringerror.html', context)
-
-
-    
-    
 @require_http_methods(["POST"])
 @login_required(login_url='login')   
 def manual_payment(request):
@@ -659,7 +212,7 @@ def manual_payment(request):
         messages.warning(request, msg)
         return redirect(request.META['HTTP_REFERER'])
         
-    logging.basicConfig(format   = '%(asctime)s - manual_payments -[%(levelname)s]: %(message)s', filename = LOG_FILE, level = logging.INFO)
+    logging.basicConfig(format   = '%(asctime)s - manual_payments -[%(levelname)s]: %(message)s', filename = Setting.get_var('log_path'), level = logging.INFO)
         
     # Cambio a Pending.
     up.status = 'PE'
@@ -682,4 +235,38 @@ def manual_payment(request):
     else:
         messages.success(request, 'Error al realizar el pago: verificar PaymentHistory')
         return redirect(request.META['HTTP_REFERER'])
-    
+
+# Dashboard
+@require_http_methods(["GET","POST"])
+@login_required(login_url='login')
+def dashboard(request):
+    userpaymentsErrors = UserPayment.objects.filter(status='RE').count()
+    userpaymentsAct = UserPayment.objects.filter(status='RE', user__expiration__gt = date.today()).count()
+    userpaymentsDes = UserPayment.objects.filter(status='RE', user__expiration__lt = date.today()).count()
+
+    context = { 'title': 'Dashboard', 'userpaymentserrors': userpaymentsErrors, 'userpaymentsact': userpaymentsAct, 'userpaymentsdes': userpaymentsDes }
+    return render(request, 'content/dashboard.html', context)
+
+# Pagos recurrentes
+@require_http_methods(["GET","POST"])
+@login_required(login_url='login')
+def userpayments(request):
+
+    context = { 'title': 'Pagos Recurrentes' }
+    return render(request, 'content/content.html', context)
+
+# Historial de pagos
+@require_http_methods(["GET", "POST"])
+@login_required(login_url='login')
+def paymenthistory(request):
+
+    context = { 'title': 'Historial de Pagos' }
+    return render(request, 'content/content.html', context)
+
+# Usuarios
+@require_http_methods(["GET", "POST"])
+@login_required(login_url='login')
+def users(request):
+
+    context = { 'title': 'Usuarios' }
+    return render(request, 'content/content.html', context)

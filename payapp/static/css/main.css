@@ -1,0 +1,225 @@
+body {
+  background-color: #f8f8f8;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+}
+
+h1, h2, h3, h4 { font-weight: 700; }
+
+.card { min-height: 200px; }
+
+.card-header { border: 0; }
+
+.card-header h5 {
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.navbar .btn { line-height: .5rem; }
+
+.btn-danger {
+  background-color: #ff4040;
+  border-color: #ff4040;
+}
+
+.bg-danger { background-color: #ff4040 !important; }
+
+.bg-danger-gradient {
+  background-image: linear-gradient(147deg, #ff6565 0%, #FF2525 74%);
+}
+
+.bg-secondary { background-color: #ececec !important; }
+
+.badge-secondary {
+  background-color: #ececec;
+  color: #6c757d;
+}
+
+.badge-danger { background-color: #ff4040; }
+
+.badge-danger[href]:focus,
+.badge-danger[href]:hover {
+  color: #fff;
+  text-decoration: none;
+  background-color: #ca3535;
+}
+
+.navbar {
+  border: none;
+  padding: 10px;
+}
+
+.list-group-item {
+  background-color: transparent;
+  color: #fff;
+  transition: 0.3s;
+  border: none;
+  padding: 1rem 1.25rem;
+}
+
+.list-group-item.active {
+  background: transparent;
+  border-color: transparent;
+  border-left: 5px solid #ff4040;
+}
+
+.list-group-item-action:focus,
+.list-group-item-action:hover {
+  background-color: #ff4040;
+  color: #fff;
+}
+
+/* Custom Theme */
+.bg-ccm { background-color: #eaeaea !important; }
+
+/* Navigation */
+.wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.content {
+  padding: 40px 25px;
+}
+
+#sidebar {
+  color: #fff;
+  max-width: 250px;
+  min-width: 250px;
+  min-height: 100vh;
+  transition: all 0.3s;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 999;
+  box-shadow: 0px 0px 20px 5px rgba(0, 0, 0, .3);
+  background-color: #1b1e21;
+  background-image: linear-gradient(147deg, #1b1e21 0%, #000000 74%);
+}
+
+#sidebar.active { margin-left: -250px; }
+
+#sidebar .sidebar-header {
+  background: rgba(255, 255, 255, .1);
+  padding: 20px;
+}
+
+#content {
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  transition: all 0.3s;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+#content.active { width: 100%; }
+
+/* Preloader */
+.preloader {
+  background: rgba(0, 0, 0, .7) url('/static/img/spinner.svg') no-repeat center center;
+  background-size: 100px;
+  display: none;
+  height: 100%;
+  left: 0;
+  overflow: visible;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 999;
+}
+
+body.modal-open > :not(.modal) {
+  -webkit-filter: blur(1px);
+  -moz-filter: blur(1px);
+  -o-filter: blur(1px);
+  -ms-filter: blur(1px);
+  filter: blur(1px);
+}
+
+.table .thead-light th { 
+  background-color: transparent;
+  text-transform: uppercase;
+  color: #8c8c8c;
+  font-weight: 700;
+  font-size: .8rem;
+}
+
+.table td, .table th { vertical-align: baseline; }
+
+.custom-select {
+  background-image: url('/static/img/angle-arrow-down.svg');
+  background-size: 10px;
+  padding-right: 5px;
+  background-position: 90% 50%;
+  min-width: 70px;
+  background-repeat: no-repeat;
+}
+
+.custom-select option:checked { background: none; }
+
+.page-link { color: #1b1e21; }
+
+.page-link:hover { color: #000000; }
+
+.page-item.active .page-link {
+  background: #1b1e21;
+  border-color: #1b1e21
+}
+
+.badge {
+  line-height: inherit;
+  font-size: .7rem;
+}
+
+.inuse,.ui-slider-range .inuse, .yadcf-filter-range-number-slider .inuse {
+  background: rgba(0, 0, 0, .1)
+}
+
+.yadcf-filter-wrapper {
+  display: flex;
+  white-space: nowrap;
+  margin-left: inherit;
+}
+
+.indicator {
+  font-weight: 100;
+  font-size: 6rem;
+  line-height: 6rem;
+}
+
+.table-toolbar { padding-bottom: .5rem; }
+
+.search-box {
+  background-image: url('/static/img/magnifier-tool.svg');
+  background-size: 15px;
+  background-position: 95% 50%;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+.btn-ccm {
+  background-color: #929292;
+  border-color: #929292;
+}
+
+.btn-ccm:hover {
+  background: #1b1e21;
+  border-color: #1b1e21;
+}
+
+/* Date range */
+.daterangepicker td.active, .daterangepicker td.active:hover {
+  background-color: #ff4040;
+}
+
+/* Login */
+.login {
+  background-color: #1b1e21;
+  /* background-image: linear-gradient(147deg, #1b1e21 0%, #000000 74%); */
+}
+
+body,html{
+  height:100%;
+}
