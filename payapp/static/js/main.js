@@ -761,6 +761,20 @@ app.columnSearch = (field, key) => {
 }
 
 /**
+ * Resetear filtros
+ */
+app.resetFilters = () => {
+  let table = $('#table').DataTable();
+
+  table
+    .search('')
+    .columns().search('')
+    .draw();
+
+  $('#search-box, select').val('');
+}
+
+/**
  * Navegación
  * @todo Mejorar búsqueda de parametros en la URL
  */

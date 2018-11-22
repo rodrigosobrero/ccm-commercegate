@@ -27,10 +27,10 @@ from payapp.views import change_user_email
 from payapp.views import refund
 from payapp.views import delete_card
 
+from payapp.api_views import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history
+from payapp.frontend_views import login_view, logout_view, expireuser, activateuser, deleteuserpayment, manual_payment, dashboard, userpayments, paymenthistory, users
+
 from payapp.callback_views import callback_paymentez
-from payapp.frontend_views import home, userpayments, users, deleteuserpayment, paymenthistory,\
-                                    expireuser, listusersexpire, userpaymentdesactivated, login_view, logout_view,usersactives,userpaymentsactives
-from payapp.frontend_views import manual_payment, userpayment_recurring_error, paymenthistory_manual, activateuser
 
 urlpatterns = [
 
@@ -47,30 +47,24 @@ urlpatterns = [
     url(r'^api/v1/get/enabledcard/(?P<user_id>[\w\-]+)', get_enabled_card),
     url(r'^api/v1/get/refund/(?P<payment_id>[\w\-]+)', refund),
 
-    url(r'^ui/home/', home, name='home'),
+    url(r'^api/v1/api/users/(?P<user_id>[\w\-]+)', get_user),
+    url(r'^api/v1/api/users', get_all_users),
+    url(r'^api/v1/api/payments/(?P<user_id>[\w\-]+)/(?P<records>[\w\-]+)', get_user_payment),
+    url(r'^api/v1/api/payments', get_all_payments),
+    url(r'^api/v1/api/paymenthistory/(?P<user_id>[\w\-]+)/(?P<records>[\w\-]+)', get_payment_history),
+    url(r'^api/v1/api/paymenthistory', get_all_payment_history),
 
-    #url(r'^ui/userpayments/(?P<user_id>[\w\-]+)', userpayments, name='userpaymentsfilter'),
-    url(r'^ui/userpayments/', userpayments, name='userpayments'),
-    url(r'^ui/userpaymentsactives/', userpaymentsactives, name='userpaymentsactives'),
-    url(r'^ui/userpaymentdesactivated', userpaymentdesactivated, name='userpaymentdesactivated'),
-    url(r'^ui/userpaymentrecurringerror', userpayment_recurring_error, name='userpayment_recurring_error'),
-
-
-    url(r'^ui/users', users, name='users'),
-    url(r'^ui/listusersactive', usersactives, name='usersactives'),
-    url(r'^ui/listusersexpire', listusersexpire, name='listusersexpire'),
+    url(r'^ui/dashboard/', dashboard, name='dashboard'),
 
     url(r'^ui/expireuser', expireuser, name='expireuser'),
 	url(r'^ui/activateuser', activateuser, name='activateuser'),	
     url(r'^ui/deleteuserpayment', deleteuserpayment, name='deleteuserpayment'),
     url(r'^ui/manualpayment', manual_payment, name='manual_payment'),
-    
-
-    url(r'^ui/paymenthistory/(?P<user_payment_id>[\w\-]+)', paymenthistory, name='paymenthistoryfilter'),
-    url(r'^ui/paymenthistory/', paymenthistory, name='paymenthistory'),
-    url(r'^ui/paymenthistorymanual/', paymenthistory_manual, name='paymenthistory_manual'),
 
     url(r'^ui/login/', login_view, name='login'),
     url(r'^ui/logout/', logout_view, name='logout'),
 
+    url(r'^ui/usuarios/', users, name='users'),
+    url(r'^ui/pagos-recurrentes/', userpayments, name='userpayments'),
+    url(r'^ui/historial-pagos/', paymenthistory, name='paymenthistory'),
 ]
