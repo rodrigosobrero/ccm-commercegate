@@ -71,7 +71,10 @@ def paymentez_translator(content):
         code = "-1"
 
     data = PAYMENTEZ["paymentez"]["codes"][str(code)]
-    content["transaction"]["message"] = unicodetoascii(content["transaction"]["message"].encode('utf-8'))
+    if content["transaction"]["message"] is not None:
+        content["transaction"]["message"] = unicodetoascii(content["transaction"]["message"].encode('utf-8'))
+    else:
+        content["transaction"]["message"] = ''
 
     ret["up_status"]     = data["up_status"]
     ret["up_message"]    = content["transaction"]["message"]
