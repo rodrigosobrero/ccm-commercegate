@@ -1,6 +1,12 @@
 let app = new Object(this.self);
 
-app.fullScreenState;
+/**
+ * Parámetros de configuración
+ */
+app.config = {
+  tableSelector: '#table',
+  fullScreenState: false
+}
 
 /**
  * Iniciar tabla (DataTables)
@@ -10,7 +16,7 @@ app.fullScreenState;
  * @param {array} prm.filters - Opcional
  */
 app.iniTable = prm => {
-  let table = $('#table').DataTable({
+  let table = $(app.config.tableSelector).DataTable({
     ajax: prm.api,
     buttons: [
       { extend: 'excelHtml5', className: 'btn-sm btn-ccm' },
@@ -52,8 +58,8 @@ app.iniTable = prm => {
       },
   });
 
-  table.on('processing.dt', () => { app.preloader(true) });
-  table.on('init.dt', () => { app.preloader() });
+  // table.on('processing.dt', () => { app.preloader(true) });
+  // table.on('init.dt', () => { app.preloader() });
 }
 
 /**
@@ -401,7 +407,7 @@ app.preloader = prm => {
  */
 app.fullScreen = prm => {
   let elem = document.documentElement;
-  app.fullScreenState = prm;
+  app.config.fullScreenState = prm;
 
   function open() {
     if (elem.requestFullscreen) {
@@ -519,35 +525,77 @@ app.modalUserActivate = prm => {
     title: 'Activar usuario',
     body: `<div class="alert alert-secondary shadow-sm">
             <b>Usuario:</b> ${prm}
-          </div>
-          <form method="post" action="">
+           </div>
+           <form id="activate_user" novalidate>
             <div class="form-group">
-              <label for="txtdays">Cantidad de días</label>
+              <label for="days">Cantidad de días</label>
               <input type="hidden" id="user_id" name="user_id" value="${prm}">
-              <input type="number" class="form-control" id="txtdays" name="txtdays" autofocus>
-              <small id="emailHelp" class="form-text text-muted">Ingrese la cantidad de días que estará activo el usuario.</small>
-            </div>`,
-    footer: ` <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</button>
-              <button type="submit" class="btn btn-sm btn-success">Activar</button>
-            </form>`
+              <input type="number" class="form-control" id="days" name="days" min="1" autofocus required>
+              <div class="invalid-feedback">
+                Ingrese la cantidad de días que estará activo el usuario.
+              </div>
+            </div>
+           </form>`,
+    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+             <a href="javascript:void(0)" role="button" class="btn btn-sm btn-success" id="btnActivateUser">Activar</a>`
+  });
+
+  let form = $('#activate_user');
+
+  $('#btnActivateUser').on('click', () => {
+    if(form[0].checkValidity()) {
+      let data = {
+        'user_id': prm,
+        'days': $('#days').val()
+      }
+
+      $.ajax({
+        type: 'POST',
+        url: '/ui/activateuser/',
+        data: JSON.stringify(data)
+      }).done(() => {
+        alert = '<div class="alert alert-success" role="alert">Usuario activado correctamente.</div>';
+        $(app.config.tableSelector).DataTable().ajax.reload();
+      }).fail(() => {
+        alert = '<div class="alert alert-danger" role="alert">Error al intentar activar el usuario.</div>';
+      }).always(() => {
+        $('.modal-body').prepend(alert);
+        $('#btnActivateUser').addClass('disabled');
+      });
+    } else {
+      $('#activate_user').addClass('was-validated');
+    }
   });
 }
 
 /**
- * Usuarios - Modal experirar usuario
+ * Usuarios - Modal expirar usuario
  * @param {string} prm
  */
 app.modalUserDesactivate = prm => {
   app.modal({
     title: 'Expirar usuario',
-    body: `<p>¿Está seguro que desea expirar al usuario <b>${prm}</b>?</p>
-          <form method="post" action="">
-            <div class="form-group">
-              <input type="hidden" id="user_id" name="user_id" value="${prm}">
-            </div>`,
-    footer: ` <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</button>
-              <button type="submit" class="btn btn-sm btn-danger">Expirar</button>
-            </form>`
+    body: `<p>¿Está seguro que desea expirar al usuario <b>${prm}</b>?</p>`,
+    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+             <a href="javascript:void(0)" role="button" class="btn btn-sm btn-danger" id="btnExpireUser">Expirar</a>`
+  });
+
+  $('#btnExpireUser').on('click', () => {
+    let data = { 'user_id': prm };
+
+    $.ajax({
+      type: 'POST',
+      url: '/ui/expireuser/',
+      data: JSON.stringify(data)
+    }).done(() => {
+      alert = '<div class="alert alert-success" role="alert">Usuario expirado correctamente.</div>'
+      $(app.config.tableSelector).DataTable().ajax.reload();
+    }).fail(() => {
+      alert = '<div class="alert alert-danger" role="alert">Error al intentar expirar el usuario.</div>';
+    }).always(() => {
+      $('.modal-body').prepend(alert);
+      $('#btnExpireUser').addClass('disabled');
+    });
   });
 }
 
@@ -764,7 +812,7 @@ app.columnSearch = (field, key) => {
  * Resetear filtros
  */
 app.resetFilters = () => {
-  let table = $('#table').DataTable();
+  let table = $(app.config.tableSelector).DataTable();
 
   table
     .search('')

@@ -122,40 +122,75 @@ def expireuser(request):
                     except Exception as e:
                         pass
 
-                    messages.success(request, 'Usuario expirado correctamente!')
+                    messages.success(request, 'Usuario %s expirado correctamente' % user_id)
 
-                    return JsonResponse({'message': 'Guardado Correctamente', 'data': fecha}, status=200)
+                    return JsonResponse({'message': 'guardado correctamente', 'data': fecha}, status=200)
                     #return redirect(users)
                 except Exception as e:
-                    return JsonResponse({'message': 'Hubo un Error', 'data': e.message},status=500)
+                    return JsonResponse({'message': 'Hubo un error', 'data': e.message},status=500)
         return JsonResponse({ 'message': 'Metodo no permitido', 'data': ''}, status=500)
-		
+
 @require_http_methods(["POST"])
 @login_required(login_url='login')
 def activateuser(request):
-	if request.POST.has_key('days'):
-		days = request.POST['days']
-	if request.POST.has_key('user_id'):
-		user_id = request.POST['user_id']
+    if request.is_ajax():
+        if request.method == 'POST':
+            try:
+                json_data   = json.loads(request.body)
+                user_id     = json_data['user_id']
+                days        = json_data['days']
+                user        = User.objects.get(user_id=user_id)
 
-	user = User.objects.get(user_id=user_id)
+                # Sumar la cantidad de dias a hoy
+                date        = user.enable_for(days)
+
+                # Envio envento a intercom
+                ep          = Setting.get_var('intercom_endpoint')
+                token       = Setting.get_var('intercom_token')
+
+                try:
+                    intercom = Intercom(ep, token)
+                    metadata = { 
+                        'event_description': 'usuario activado por el administrador', 
+                        'expire_at': str(int(mktime(date.timetuple())))
+                        }
+                    reply = intercom.submitEvent(user.user_id, user.email, 'user_activated', metadata)
+                except Exception as e:
+                    pass
+
+                messages.success(request, 'Usuario %s activado correctamente' % user_id)
+
+                return JsonResponse({ 'message': 'activado correctamente' }, status=200)
+            except Exception as e:
+                return JsonResponse({'message': 'Hubo un error', 'data': e.message},status=500)
+    return JsonResponse({ 'message': 'Metodo no permitido', 'data': '' }, status=500)
+
+#@require_http_methods(["POST"])
+#@login_required(login_url='login')
+#def activateuser(request):
+#	if request.POST.has_key('days'):
+#		days = request.POST['days']
+#	if request.POST.has_key('user_id'):
+#		user_id = request.POST['user_id']
+
+#	user = User.objects.get(user_id=user_id)
 	
 	# Sumar la cantidad de dias a hoy
-	date = user.enable_for(days)
+#	date = user.enable_for(days)
 	
 	# Envio envento a intercom
-	ep    = Setting.get_var('intercom_endpoint')
-	token = Setting.get_var('intercom_token')
-	try:
-		intercom = Intercom(ep, token)
-		metadata = {"event_description": "usuario activado por el administrador", "expire_at": str(int(mktime(date.timetuple())))}
-		reply = intercom.submitEvent(user.user_id, user.email, "user_activated", metadata)
-	except Exception as e:
-		pass	
+#	ep    = Setting.get_var('intercom_endpoint')
+#	token = Setting.get_var('intercom_token')
+#	try:
+#		intercom = Intercom(ep, token)
+#		metadata = {"event_description": "usuario activado por el administrador", "expire_at": str(int(mktime(date.timetuple())))}
+#		reply = intercom.submitEvent(user.user_id, user.email, "user_activated", metadata)
+#	except Exception as e:
+#		pass	
 	
-	messages.success(request, "Usuario %s activado correctamente!" % user_id)
+#	messages.success(request, "Usuario %s activado correctamente!" % user_id)
 
-	return redirect(users)
+#	return redirect(users)
 
 @require_http_methods(["GET","POST"])
 @login_required(login_url='login')
