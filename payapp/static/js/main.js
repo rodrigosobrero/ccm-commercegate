@@ -919,6 +919,8 @@ app.columnSearch = (field, key) => {
           null,
           null,
           null,
+          null,
+          null,
           { 'search': 'Error en recurrencia' }
         ]
         break;
@@ -930,10 +932,9 @@ app.columnSearch = (field, key) => {
           null,
           null,
           null,
-          { 'search': 'Error en recurrencia' },
           null,
-          null,
-          { 'search': 'true' }
+          { 'search': 'true' },
+          { 'search': 'Error en recurrencia' }
         ]
         break;
       case 'errordes':
@@ -944,10 +945,9 @@ app.columnSearch = (field, key) => {
           null,
           null,
           null,
-          { 'search': 'Error en recurrencia' },
           null,
-          null,
-          { 'search': 'false' }
+          { 'search': 'false' },
+          { 'search': 'Error en recurrencia' }
         ]
         break;
     }
@@ -1015,9 +1015,9 @@ app.navigation = () => {
           { 'title': 'Fecha de Modificación', 'type': 'date-eu', 'data': 'modification_date', 'render': data => this.renders.date(data) },
           { 'title': 'Fecha de Pago', 'type': 'date-eu', 'data': 'payment_date', 'render': data => this.renders.date(data) },
           { 'title': 'Recurrencia', 'data': 'recurrence' },
+          { 'title': 'Activo', 'data': 'is_active', 'visible': false },
           { 'title': 'Estado', 'data': 'status', 'render': data => this.renders.rePayState(data) },
           { 'title': 'Reintentos', 'data': 'retries' },
-          { 'title': 'Activo', 'data': 'is_active', 'visible': false },
           { 'title': 'Mensaje', 'data': 'message', 'render': data => this.renders.rePayMessage(data) },
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => this.renders.rePayActions(data, type, row) },
         ],
