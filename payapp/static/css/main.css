@@ -266,3 +266,24 @@ body,html{
   background-repeat: no-repeat;
   padding-left: 60px;
 }
+
+.modal-header {
+  background: #1b1e21;
+  color: #fff;
+  border-bottom: none;
+}
+
+.close {
+  text-shadow: none;
+  color: #fff;
+}
+
+.close:not(:disabled):not(.disabled):focus,
+.close:not(:disabled):not(.disabled):hover {
+  text-shadow: none;
+  color: #b7b7b7; 
+}
+  
+.modal-content {
+  border: none;
+}
