@@ -594,8 +594,7 @@ app.modalUserActivate = prm => {
       }).always(() => {
         $('.modal-body').prepend(alert);
         this.loadingButton({
-          selector: '#btnActivateUser',
-          loading: false 
+          selector: '#btnActivateUser'
         });
       });
     } else {
@@ -636,8 +635,7 @@ app.modalUserDesactivate = prm => {
       alert = '<div class="alert alert-danger" role="alert">Error al intentar expirar el usuario.</div>';
     }).always(() => {
       this.loadingButton({
-        selector: '#btnExpireUser',
-        loading: false 
+        selector: '#btnExpireUser'
       });
       $('.modal-body').prepend(alert);
     });
@@ -835,8 +833,7 @@ app.modalManualPay = prm => {
     }).always(() => {
       $('.modal-body').prepend(alert);
       this.loadingButton({
-        selector: '#btnManualPay',
-        loading: false 
+        selector: '#btnManualPay'
       })
     });
   });
@@ -873,14 +870,35 @@ app.modalHisDetail = prm => {
                   <p><b>Impuesto:</b> ${row.vat_amount}</p>
                   <p><b>Neto:</b> ${row.taxable_amount}</p>
                   <p><b>Descuento:</b> ${row.disc_pct}</p>
-                  <p><b>Descripcion:</b> ${row.description}</p>
-                  <p><b>Mensaje:</b> <a href="#">Ver mensaje</a></p>
+                  <p><b>Descripción:</b> ${row.description}</p>
+                  <p><b>Mensaje:</b> <a href="#message" 
+                                        role="button" aria-expanded="false" 
+                                        aria-controls="message"
+                                        data-toggle="collapse" 
+                                        class="badge badge-secondary">
+                                          <span>Ver mensaje</span>
+                                          <span style="display:none;">Ocultar mensaje</span>
+                                        </a>
+                  </p>
                   <p><b>Pago manual:</b> ${this.renders.boolean(row.manual)}</p>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <div class="collapse multi-collapse" id="message">
+                    <hr>
+                    <h6>Mensaje</h6>
+                    <p>${row.message}</p>
+                  </div>
                 </div>
               </div>
             </div>
            </div>`
   });
+
+  $('.modal [role=button]').click(() => {
+    $('.modal [role=button] span').toggle();
+  })
 }
 
 /**
