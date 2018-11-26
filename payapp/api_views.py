@@ -38,6 +38,7 @@ def get_user(request, user_id):
     ret['country']          = user.country.name
     ret['creation_date']    = user.creation_date
     ret['email']            = user.email
+    ret['is_active']        = user.is_active
     ret['user_id']          = user_id
 
     body = { 'status': 'success', 'value': ret }

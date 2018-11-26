@@ -144,7 +144,7 @@ def activateuser(request):
                 # Sumar la cantidad de dias a hoy
                 date        = user.enable_for(days)
 
-                # Envio envento a intercom
+                # Envio evento a intercom
                 ep          = Setting.get_var('intercom_endpoint')
                 token       = Setting.get_var('intercom_token')
 
@@ -165,111 +165,88 @@ def activateuser(request):
                 return JsonResponse({'message': 'Hubo un error', 'data': e.message},status=500)
     return JsonResponse({ 'message': 'Metodo no permitido', 'data': '' }, status=500)
 
-#@require_http_methods(["POST"])
-#@login_required(login_url='login')
-#def activateuser(request):
-#	if request.POST.has_key('days'):
-#		days = request.POST['days']
-#	if request.POST.has_key('user_id'):
-#		user_id = request.POST['user_id']
-
-#	user = User.objects.get(user_id=user_id)
-	
-	# Sumar la cantidad de dias a hoy
-#	date = user.enable_for(days)
-	
-	# Envio envento a intercom
-#	ep    = Setting.get_var('intercom_endpoint')
-#	token = Setting.get_var('intercom_token')
-#	try:
-#		intercom = Intercom(ep, token)
-#		metadata = {"event_description": "usuario activado por el administrador", "expire_at": str(int(mktime(date.timetuple())))}
-#		reply = intercom.submitEvent(user.user_id, user.email, "user_activated", metadata)
-#	except Exception as e:
-#		pass	
-	
-#	messages.success(request, "Usuario %s activado correctamente!" % user_id)
-
-#	return redirect(users)
-
-@require_http_methods(["GET","POST"])
+@require_http_methods(["POST"])
 @login_required(login_url='login')
 def deleteuserpayment(request):
-    if request.method == 'POST':
-        txtmessage= ''
-        if request.POST.has_key('txtmessage'):
-            txtmessage = request.POST['txtmessage']
-        if request.POST.has_key('userpayment_id'):
-            id = request.POST['userpayment_id']
+    if request.is_ajax():
+        if request.method == 'POST':
+            txtmessage = ''
 
-        registro   = UserPayment.objects.get(id=id)
+            try:
+                json_data           = json.loads(request.body)
 
-        registro.message = txtmessage
-        registro.enabled = False
-        registro.status  = 'CA'
-        registro.channel = 'X'
-        registro.save()
+                if json_data['txtmessage']:
+                    txtmessage      = json_data['txtmessage']
 
-        # Envio envento a intercom
-        ep    = Setting.get_var('intercom_endpoint')
-        token = Setting.get_var('intercom_token')
-        try:
-            intercom = Intercom(ep, token)
-            reply = intercom.submitEvent(registro.user.user_id, registro.user.email, "cancelled-sub",
-                                     {"event_description": "recurrencia cancelada por el administrador"})
-            if not reply:
-                registro.message = "Intercom error: cannot post the event"
+                userpayment_id      = json_data['userpayment_id']
+                registro            = UserPayment.objects.get(user_payment_id=userpayment_id)
+                registro.message    = txtmessage
+                registro.enabled    = False
+                registro.status     = 'CA'
+                registro.channel    = 'X'
                 registro.save()
-        except Exception as e:
-            registro.message = "Intercom error: %s" % str(e)
-            registro.save()
 
-        messages.success(request, 'Recurrencia desactivada correctamente!')
+                # Envio envento a intercom
+                ep    = Setting.get_var('intercom_endpoint')
+                token = Setting.get_var('intercom_token')
 
-        return redirect(request.META['HTTP_REFERER'])
+                try:
+                    intercom = Intercom(ep, token)
+                    reply = intercom.submitEvent(registro.user.user_id, registro.user.email, "cancelled-sub",
+                                            {"event_description": "recurrencia cancelada por el administrador"})
+                    if not reply:
+                        registro.message = "Intercom error: cannot post the event"
+                        registro.save()
+                except Exception as e:
+                    registro.message = "Intercom error: %s" % str(e)
+                    registro.save()
+
+                messages.success(request, 'recurrencia desactivada correctamente')
+
+                return JsonResponse({ 'message': 'activado correctamente' }, status=200)
+            except Exception as e:
+                return JsonResponse({'message': 'Hubo un error', 'data': e.message},status=500)
+    return JsonResponse({ 'message': 'Metodo no permitido', 'data': '' }, status=500)
 
 @require_http_methods(["POST"])
-@login_required(login_url='login')   
+@login_required(login_url='login')
 def manual_payment(request):
-    if not request.POST.has_key('userpayment_id'):
-        msg = 'Error al realizar el pago: contactar al administador.'
-        messages.success(request, msg)
-        return redirect(userpayments)
-    
-    up = UserPayment.get_by_id(request.POST['userpayment_id'])
-    if up is None:
-        msg = 'Error al realizar el pago: %s no existe' % request.POST['userpayment_id']
-        messages.warning(request, msg)
-        return redirect(userpayments)
+    if request.is_ajax():
+        if request.method == 'POST':
+            try:
+                json_data       = json.loads(request.body)
+                userpayment_id  = json_data['userpayment_id']
+                up              = UserPayment.get_by_id(userpayment_id)
 
-    if up.user.has_active_recurrence():
-        msg = 'Error al realizar el pago: el usuario ya posee una recurrencia activa.'
-        messages.warning(request, msg)
-        return redirect(request.META['HTTP_REFERER'])
-        
-    logging.basicConfig(format   = '%(asctime)s - manual_payments -[%(levelname)s]: %(message)s', filename = Setting.get_var('log_path'), level = logging.INFO)
-        
-    # Cambio a Pending.
-    up.status = 'PE'
-    up.save()
-    
-    # Obtengo la tarjeta habilitada para el usuario
-    card = up.user.get_card()
-    if card is None:
-        msg = "Error al obtener la tarjeta para el usuario %s" % up.user.user_id
-        up.error(msg)
-        messages.success(request, msg)
-        return redirect(userpayments)
-    
-    pay = make_payment(up, card, logging, True)
-    
-    if pay:
-        msg = 'Pago efectuado correctamente para %s' % up.user.user_id
-        messages.success(request, msg)
-        return redirect(request.META['HTTP_REFERER'])
-    else:
-        messages.success(request, 'Error al realizar el pago: verificar PaymentHistory')
-        return redirect(request.META['HTTP_REFERER'])
+                if up is None:
+                    return JsonResponse({ 'message': 'Error al realizar el pago, el usuario no existe' }, status = 500)
+
+                if up.user.has_active_recurrence():
+                    return JsonResponse({ 'message': 'Error al realizar el pago: el usuario ya posee una recurrencia activa' }, status = 500)
+
+                logging.basicConfig(format   = '%(asctime)s - manual_payments -[%(levelname)s]: %(message)s', filename = Setting.get_var('log_path'), level = logging.INFO)
+
+                # Cambio a estado Pending
+                up.status = 'PE'
+                up.save()
+
+                # Obtengo la tarjeta habilitada para el usuario
+                card = up.user.get_card()
+
+                if card is None:
+                    msg = 'Error al obtener la tarjeta para el usuario'
+                    up.error(msg)
+                    return JsonResponse({ 'message': msg }, status = 500)
+
+                pay = make_payment(up, card, logging, True)
+
+                if pay:
+                    return JsonResponse({ 'message': 'Pago efectuado correctamente' }, status = 200)
+                else:
+                    return JsonResponse({ 'message': 'Error al realizar el pago: verificar PaymentHistory' }, status = 500)
+            except Exception as error:
+                return JsonResponse({ 'message': 'Hubo un error' }, status = 500)
+    return JsonResponse({ 'message': 'metodo no permitido' }, status = 500)
 
 # Dashboard
 @require_http_methods(["GET","POST"])
