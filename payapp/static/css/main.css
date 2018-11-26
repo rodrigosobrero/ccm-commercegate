@@ -132,14 +132,6 @@ h6 { font-weight: 900 }
   z-index: 999;
 }
 
-body.modal-open > :not(.modal) {
-  -webkit-filter: blur(1px);
-  -moz-filter: blur(1px);
-  -o-filter: blur(1px);
-  -ms-filter: blur(1px);
-  filter: blur(1px);
-}
-
 .table .thead-light th { 
   background-color: transparent;
   text-transform: uppercase;
