@@ -24,6 +24,8 @@ app.iniTable = prm => {
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'pdfHtml5', className: 'btn-sm btn-ccm' }
     ],
+    // processing: true,
+    // serverSide: true,
     bLengthChange: false,
     responsive: true,
     autoWidth: true,
@@ -39,8 +41,9 @@ app.iniTable = prm => {
         $(table.table().header()).addClass('thead-light');
         
         // Inicializa 'tooltip' y 'popover'
-        $('body').tooltip({selector: '[data-toggle="tooltip"]'});
-        $('body').popover({selector: '[data-toggle="popover"]'});
+        $('body')
+          .tooltip({selector: '[data-toggle="tooltip"]'})
+          .popover({selector: '[data-toggle="popover"]'});
 
         // Inserta botones en el div #table-buttons
         table.buttons().container().appendTo('#table-buttons');
@@ -59,8 +62,9 @@ app.iniTable = prm => {
       },
   });
 
-  // table.on('processing.dt', () => { app.preloader(true) });
-  // table.on('init.dt', () => { app.preloader() });
+  table.on('processing.dt', (e, settings, processing) => { 
+    processing ? app.preloader(true) : app.preloader()
+  });
 }
 
 /**
@@ -69,7 +73,7 @@ app.iniTable = prm => {
  * @param {array} filters - 
  *        [{ filter_type: select (default) | date_range,
  *           column_number: número de columna, 
- *           filter_label: nombre del filtro }]
+ *           filter_label: etiqueta del filtro }]
  */
 app.dataTablesPlugin = function (table, filters) {
   if (table && filters) {
@@ -215,6 +219,7 @@ app.renders.date = prm => {
 app.renders.usersActions = (data, type, row) => {
   let btn = '';
 
+  // if (row.is_active == 'Si') {
   if (row.is_active) {
     btn += `<a href="javascript:void(0)" onclick="app.modalUserDesactivate('${row.user_id}')"
             class="btn btn-link btn-sm text-black-50" role="button" 
@@ -395,14 +400,35 @@ app.renders.hisPayActions = (data, type, row) => {
 }
 
 /**
- * Preloader
+ * Loading
  * @param {boolean} prm
  */
 app.preloader = prm => {
-  if (prm) {
+  isVisible = $('.preloader').is(':visible');
+
+  if (prm && !isVisible) {
     $('.preloader').fadeIn();
   } else {
     $('.preloader').fadeOut();
+  }
+}
+
+/**
+ * Loading botón
+ * @param {string} prm.selector
+ * @param {boolean} prm.loading
+ */
+app.loadingButton = prm => {
+  if (prm.loading) {
+    $(prm.selector)
+      .addClass('ld-ext-right running')
+      .append('<div class="ld ld-ring ld-spin"></div>');
+  } else {
+    $(prm.selector)
+      .addClass('disabled')
+      .removeClass('ld-ext-right running')
+      .find('div')
+      .remove();
   }
 }
 
@@ -442,31 +468,12 @@ app.fullScreen = prm => {
 }
 
 /**
- * Cargador para botón
- * @param {string} prm.selector
- * @param {boolean} prm.loading
- */
-app.loadingButton = prm => {
-  if (prm.loading) {
-    $(prm.selector)
-      .addClass('ld-ext-right running')
-      .append('<div class="ld ld-ring ld-spin"></div>');
-  } else {
-    $(prm.selector)
-      .addClass('disabled')
-      .removeClass('ld-ext-right running')
-      .find('div')
-      .remove();
-  }
-}
-
-/**
  * Modal
  * @param {string} prm.class - (Opcional) Clase adicional para el modal
  * @param {string} prm.title - Título del modal
  * @param {string} prm.body - Contenido del modal
  * @param {string} prm.footer - (Opcional) Footer del modal
- * @param {string} prm.id - (Opcional)
+ * @param {string} prm.id - (Opcional) ID del modal
  */
 app.modal = prm => {
   let id = prm.id ? prm.id : 'modal';
@@ -502,16 +509,14 @@ app.modalUserPayments = prm => {
   $.ajax({
     url: app.config.api + 'payments/' + prm + '/2',
     method: 'GET'
-  }).done((data) => {
+  }).done((resp) => {
     let recurrence = '';
 
-    if (data) {
-      recurrence += `<div class="alert alert-secondary shadow-sm">
-                      <b>Usuario:</b> ${prm}
-                     </div>`;
+    if (resp) {
+      recurrence += `<span class="badge badge-light">Usuario ${prm}</span><hr>`;
 
-      data.data.forEach(element => {
-        recurrence += `<div class="card shadow-sm mt-3">
+      resp.data.forEach(element => {
+        recurrence += `<div class="card mt-3">
                         <div class="card-body">
                           <div class="row">
                             <div class="col-5">
@@ -537,7 +542,7 @@ app.modalUserPayments = prm => {
     app.modal({
       title: 'Pagos recurrentes',
       body: recurrence,
-      footer: `${data.records > 2 ? `<a href="/ui/pagos-recurrentes/?usuario=${prm}" 
+      footer: `${resp.records > 2 ? `<a href="/ui/pagos-recurrentes/?usuario=${prm}" 
                                       class="btn btn-sm btn-secondary">Ver más recurrencias</a>` : ''}`
     });
   });
@@ -546,14 +551,13 @@ app.modalUserPayments = prm => {
 /**
  * Usuarios - Modal activar usuario
  * @param {string} prm
- */
+ */ 
 app.modalUserActivate = prm => {
   this.modal({
     id: 'userActivate',
     title: 'Activar usuario',
-    body: `<div class="alert alert-secondary shadow-sm">
-            <b>Usuario:</b> ${prm}
-           </div>
+    body: `<span class="badge badge-light">Usuario ${prm}</span>
+           <hr>
            <form id="activate_user" novalidate>
             <div class="form-group">
               <label for="days">Cantidad de días</label>
@@ -564,7 +568,7 @@ app.modalUserActivate = prm => {
               </div>
             </div>
            </form>`,
-    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</a>
              <a href="javascript:void(0)" role="button" class="btn btn-sm btn-success" id="btnActivateUser">Activar</a>`
   });
 
@@ -612,7 +616,7 @@ app.modalUserDesactivate = prm => {
     id: 'userDesactivate',
     title: 'Expirar usuario',
     body: `<p>¿Está seguro que desea expirar al usuario <b>${prm}</b>?</p>`,
-    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+    footer: `<a href="javascript:void(0)" role="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</a>
              <a href="javascript:void(0)" role="button" class="btn btn-sm btn-danger" id="btnExpireUser">Expirar</a>`
   });
 
@@ -650,9 +654,8 @@ app.modalUserDesactivate = prm => {
 app.modalRePayStop = (user, id) => {
   this.modal({
     title: 'Desactivar recurrencia',
-    body: `<div class="alert alert-secondary shadow-sm">
-            <b>Usuario:</b> ${user}
-           </div>
+    body: `<span class="badge badge-light">Usuario ${user}</span>
+           <hr>
            <form id="desactivate_pay">
             <div class="form-group" novalidate>
               <label for="txtmessage">Mensaje</label>
@@ -661,7 +664,7 @@ app.modalRePayStop = (user, id) => {
               <small id="emailHelp" class="form-text text-muted">Ingrese un mensaje (opcional).</small>
             </div>
            </form>`,
-    footer: ` <a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+    footer: ` <a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</a>
               <a href="javascript:void(0)" class="btn btn-sm btn-danger" id="btnDesactivatePay">Desactivar</a>`
   });
 
@@ -689,9 +692,10 @@ app.modalRePayStop = (user, id) => {
         alert = '<div class="alert alert-danger" role="alert">Error al intentar desactivar la concurrencia.</div>';
       }).always(() => {
         $('.modal-body').prepend(alert);
+        $('#txtmessage').attr('disabled', true);
         this.loadingButton({
           selector: '#btnDesactivatePay',
-          loading: true 
+          loading: false
         });
       });
   })
@@ -711,17 +715,13 @@ app.modalRePayUser = prm => {
     let footer;
 
     if (data.value) {
-        message = `<div class="card shadow-sm">
+        message = `<div class="card">
                     <div class="card-body">
-                      <div class="row">
-                        <div class="col">
-                          <p><b>ID:</b> ${prm}</p>
-                          <p><b>Email:</b> ${data.value.email}</p>
-                          <p><b>País:</b> ${data.value.country}</p>
-                          <p><b>Fecha de creación:</b> ${this.renders.date(data.value.creation_date)}</p>
-                          <p><b>Tarjeta de crédito:</b> ${this.renders.creditCard(data.value.card)}</p>
-                        </div>
-                      </div>
+                      <p><b>ID:</b> ${prm}</p>
+                      <p><b>Email:</b> ${data.value.email}</p>
+                      <p><b>País:</b> ${data.value.country}</p>
+                      <p><b>Fecha de creación:</b> ${this.renders.date(data.value.creation_date)}</p>
+                      <p><b>Tarjeta de crédito:</b> ${this.renders.creditCard(data.value.card)}</p>
                     </div>
                    </div>`;
 
@@ -741,7 +741,7 @@ app.modalRePayUser = prm => {
                       </a>`
         }
     } else {
-      message += '<p>No hay datos del usuario seleccionado.</p>'
+      message = '<p>No hay datos del usuario seleccionado.</p>'
     }
 
     app.modal({
@@ -764,9 +764,7 @@ app.modalRePayDetail = prm => {
     let recurrence = '';
 
     if (data) {
-      recurrence += `<div class="alert alert-secondary shadow-sm">
-                      <b>Usuario:</b> ${prm}
-                     </div>
+      recurrence += `<span class="badge badge-light mb-3">Usuario ${prm}</span>
                      <table class="table">
                       <thead>
                         <tr>
@@ -788,7 +786,7 @@ app.modalRePayDetail = prm => {
       });
       recurrence += "</tbody></table>";
     } else {
-      recurrence += '<p>No hay datos para el usuario seleccionado.</p>'
+      recurrence = '<p>No hay datos para el usuario seleccionado.</p>'
     }
 
     app.modal({
@@ -809,7 +807,7 @@ app.modalManualPay = prm => {
   this.modal({
     title: 'Pago manual',
     body: '¿Está seguro de que desea realizar el pago manual?',
-    footer: `<a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cerrar</a>
+    footer: `<a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancelar</a>
              <a href="javascript:void(0)" class="btn btn-sm btn-danger" id="btnManualPay">Pagar</a>`
   });
 
@@ -850,10 +848,9 @@ app.modalHisDetail = prm => {
   this.modal({
     class: 'modal-lg',
     title: 'Detalle de pago',
-    body: `<div class="alert alert-secondary shadow-sm">
-            <b>Usuario:</b> ${row.user}
-           </div>
-           <div class="card shadow-sm mt-3">
+    body: `<span class="badge badge-light">Usuario ${row.user}</span>
+           <hr>
+           <div class="card mt-3">
             <div class="card-body">
               <div class="row">
                 <div class="col">
