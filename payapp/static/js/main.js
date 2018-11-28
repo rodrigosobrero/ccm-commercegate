@@ -120,10 +120,41 @@ app.dataTablesPlugin = function (table, filters) {
                             <div class="input-group-prepend">
                               <span class="input-group-text">${element.filter_label}</span>
                             </div>
-                            <input type="text" id="table-daterange-filter-${id}" class="form-control" name="daterange" value="" style="min-width:180px">
+                            <input type="text" id="table-daterange-filter-${id}" 
+                                class="form-control" name="daterange" 
+                                style="min-width:180px">
                          </div>`;
-        
-        $(dateRange).prependTo('#table-toolbar-elem-' + id);
+
+        $(dateRange)
+            .prependTo('#table-toolbar-elem-' + id)
+            .data('filter-column', element.column_number)
+            .on('apply.daterangepicker', function (ev, picker) {
+              startDate = picker.startDate;
+              endDate = picker.endDate;
+              columnNumber = $(this).data('filter-column');
+
+              $.fn.dataTable.ext.search.push(
+                function (settings, searchData, index, rowData, counter) {
+                  if (startDate != undefined) {
+                    columnStringDate = searchData[columnNumber];
+                    columnDate = moment(columnStringDate, 'DD/MM/YYYY');
+
+                    if (startDate == '' && columnDate.isBefore(endDate)) {
+                      return true
+                    } else if (endDate == '' && columnDate.isAfter(startDate)) {
+                      return true
+                    } else if (columnDate.isAfter(startDate) && columnDate.isBefore(endDate)) {
+                      return true
+                    } else {
+                      return false
+                    }
+                  }
+                  return false
+                }
+              );
+      
+              table.fnDraw();
+            });
 
         $('input[name="daterange"]').daterangepicker({
           opens: 'left',
@@ -137,55 +168,11 @@ app.dataTablesPlugin = function (table, filters) {
             monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
           }
-        });
-
-        $('#table-daterange-filter-' + id).on('apply.daterangepicker', function (ev, picker) {
-          startDate = picker.startDate;
-          endDate = picker.endDate;
-      
-          $.fn.dataTable.ext.search.push(
-            function (settings, searchData, index, rowData, counter) {
-              if (startDate != undefined) {
-                columnStringDate = searchData[element.column_number];
-                columnDate = moment(columnStringDate, 'DD/MM/YYYY');
-      
-                if (startDate == '' && columnDate.isBefore(endDate)) {
-                  return true
-                } else if (endDate == '' && columnDate.isAfter(startDate)) {
-                  return true
-                } else if (columnDate.isAfter(startDate) && columnDate.isBefore(endDate)) {
-                  return true
-                } else {
-                  return false
-                }
-              }
-            }
-          );
-      
-          table.fnDraw();
-        });
+        }).val('Todos');
       }
 
       id++;
     });
-
-    // Chequeo si existe algún 'date_range' para inicializar el plugin
-    // const checkDateRange = obj => obj.filter_type === 'date_range';
-
-    // if (filters.some(checkDateRange)) {
-    //   $('input[name="daterange"]').daterangepicker({
-    //     opens: 'left',
-    //     locale: {
-    //       format: 'DD/MM/YYYY',
-    //       applyLabel: 'Filtrar',
-    //       cancelLabel: 'Cancelar',
-    //       applyButtonClasses: 'btn-ccm',
-    //       daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-    //       monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    //                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-    //     }
-    //   });
-    // }
   }
 }
 
@@ -900,7 +887,7 @@ app.modalHisDetail = prm => {
 }
 
 /**
- * Filtro (captura parametro "filter" por URL)
+ * Filtro (captura parámetro "filter" por URL)
  * @param {string} prm
  * @todo Mejorar creación de array de búsqueda
  */
@@ -964,17 +951,25 @@ app.columnSearch = (field, key) => {
 app.resetFilters = () => {
   let table = $(app.config.tableSelector).DataTable();
 
+  $.fn.dataTable.ext.search = [];
+
   table
     .search('')
     .columns().search('')
     .draw();
 
-  $('#search-box, select').val('');
+  $('.table-toolbar')
+      .find('select')
+      .val('');
+
+  $('.table-toolbar')
+    .find('input[type=text]')
+    .val('Todos');
 }
 
 /**
  * Navegación
- * @todo Mejorar búsqueda de parametros en la URL
+ * @todo Mejorar búsqueda de parámetros en la URL
  */
 app.navigation = () => {
   let page = window.location.pathname.split('/')[2];
@@ -1020,7 +1015,7 @@ app.navigation = () => {
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => this.renders.rePayActions(data, type, row) },
         ],
         filters: [
-          { column_number: 7, filter_label: 'Estado'},
+          { column_number: 8, filter_label: 'Estado'},
           { column_number: 6, filter_label: 'Recurrencia'},
           { filter_type: 'date_range', column_number: 5, filter_label: 'Pago' },
           { filter_type: 'date_range', column_number: 4, filter_label: 'Modificación' },
