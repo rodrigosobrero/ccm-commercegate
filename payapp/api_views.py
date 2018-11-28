@@ -77,6 +77,82 @@ def get_all_users(request):
     body = { 'status': 'success', 'data': value }
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
+# Get all users (DataTables)
+# @require_http_methods(["GET"])
+# @login_required(login_url='login')
+# def get_all_users(request):
+#     try:
+#         records = User.objects.all().order_by('-modification_date')
+#     except:
+#         message = ''
+#         body = { 'status': 'error', 'message': message }
+#         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
+
+#     datatables = request.GET
+#     draw = int(datatables['draw'])
+#     length = int(datatables['length'])
+#     search = datatables['search[value]']
+#     columns_is_active = datatables['columns[3][search][value]']
+#     records_total = User.objects.all().count()
+#     records_filtered = records_total
+
+#     print columns_is_active
+
+#     # Search
+#     if search:
+#         records = User.objects.filter(
+#                     Q(country__name__icontains = search) |
+#                     Q(card__number__icontains = search) |
+#                     Q(email__icontains = search) |
+#                     Q(user_id__icontains = search)
+#                   )
+#         records_total = records.count()
+#         records_filtered = records_total
+
+#     # Paginator
+#     paginator = Paginator(records, length)
+
+#     try:
+#         object_list = paginator.page(draw).object_list
+#     except PageNotAnInteger:
+#         object_list = paginator.page(draw).object_list
+#     except EmptyPage:
+#         object_list = paginator.page(paginator.num_pages).object_list
+
+#     data = []
+
+#     for user in object_list:
+#         card = user.get_card()
+#         has_recurrence = user.has_recurrence()
+
+#         # Formatters
+#         creation_date               = user.creation_date and user.creation_date.strftime('%d/%m/%Y') or ''
+#         expiration                  = user.expiration and user.expiration.strftime('%d/%m/%Y') or ''
+#         modification_date           = user.modification_date and user.modification_date.strftime('%d/%m/%Y') or ''
+#         is_active                   = user.is_active and 'Si' or 'No'
+
+#         ret = {}
+#         ret['card']                 = card.number
+#         ret['country']              = user.country.name
+#         ret['creation_date']        = creation_date
+#         ret['email']                = user.email
+#         ret['expiration']           = expiration
+#         ret['is_active']            = is_active
+#         ret['modification_date']    = modification_date
+#         ret['user_id']              = user.user_id
+#         ret['has_recurrence']       = has_recurrence
+
+#         data.append(ret)
+
+#     body = { 
+#         'data': data,
+#         'draw': draw,
+#         'recordsFiltered': records_filtered,
+#         'recordsTotal': records_total,
+#     }
+
+#     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
+
 # Get user payment by user id
 @require_http_methods(["GET"])
 @login_required(login_url='login')
@@ -148,6 +224,7 @@ def get_all_payments(request):
         ret['status']               = payment.status
         ret['user_payment_id']      = payment.user_payment_id
         ret['user']                 = payment.user.user_id
+        ret['payment_date']         = payment.payment_date
 
         value.append(ret)
 
