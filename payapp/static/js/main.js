@@ -24,8 +24,8 @@ app.iniTable = prm => {
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'pdfHtml5', className: 'btn-sm btn-ccm' }
     ],
-    processing: true,
-    serverSide: true,
+    // processing: true,
+    // serverSide: true,
     bLengthChange: false,
     responsive: true,
     autoWidth: true,
@@ -988,9 +988,9 @@ app.navigation = () => {
           { 'title': 'ID', 'data': 'user_id' },
           { 'title': 'Email', 'data': 'email' },
           { 'title': 'Tarjeta de Crédito', 'data': 'card', 'render': data => this.renders.creditCard(data) },
-          { 'title': 'Activo', 'data': 'is_active'/*, 'render': data => this.renders.boolean(data)*/ },
+          { 'title': 'Activo', 'data': 'is_active', 'render': data => this.renders.boolean(data) },
           { 'title': 'País', 'data': 'country' },
-          { 'title': 'Expiración', 'type': 'date-eu', 'data': 'expiration'/*, 'render': data => this.renders.date(data)*/ },
+          { 'title': 'Expiración', 'type': 'date-eu', 'data': 'expiration', 'render': data => this.renders.date(data) },
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => this.renders.usersActions(data, type, row) },
         ],
         filters: [
