@@ -209,7 +209,7 @@ app.renders.creditCard = prm => {
 }
 
 app.renders.date = prm => {
-  if (moment(prm).isValid()) {
+  if (prm && moment(prm).isValid()) {
     return moment(prm).format('DD/MM/YYYY')
   } else {
     return ''
@@ -721,6 +721,7 @@ app.modalRePayUser = prm => {
                       <p><b>Email:</b> ${data.value.email}</p>
                       <p><b>País:</b> ${data.value.country}</p>
                       <p><b>Fecha de creación:</b> ${this.renders.date(data.value.creation_date)}</p>
+                      <p><b>Fecha de expiración:</b> ${this.renders.date(data.value.expiration)}</p>
                       <p><b>Tarjeta de crédito:</b> ${this.renders.creditCard(data.value.card)}</p>
                     </div>
                    </div>`;
