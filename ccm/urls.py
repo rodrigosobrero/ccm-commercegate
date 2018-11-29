@@ -1,34 +1,9 @@
-"""ccm URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/1.9/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  url(r'^$', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  url(r'^$', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.conf.urls import url, include
-    2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
-"""
 from django.conf.urls import url
 from django.contrib import admin
 
-from payapp.views import create_payment
-from payapp.views import payment_discount
-from payapp.views import cancel_payment
-from payapp.views import change_token_card
-from payapp.views import user_status
-from payapp.views import get_cards
-from payapp.views import get_enabled_card
-from payapp.views import change_user_email
-from payapp.views import refund
-from payapp.views import delete_card
-
-from payapp.api_views import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history
-from payapp.frontend_views import login_view, logout_view, expireuser, activateuser, deleteuserpayment, manual_payment, dashboard, userpayments, paymenthistory, users
+from payapp.views import create_payment, payment_discount, cancel_payment, change_token_card, user_status, get_cards, get_enabled_card, change_user_email, refund, delete_card
+from payapp.frontend_api import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history, expireuser, activateuser, deleteuserpayment, manual_payment
+from payapp.frontend_views import login_view, logout_view, dashboard, users, userpayments, paymenthistory
 
 from payapp.callback_views import callback_paymentez
 
