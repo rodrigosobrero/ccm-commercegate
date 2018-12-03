@@ -1,3 +1,8 @@
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Django
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+from django.utils import timezone
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Settings
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -169,7 +174,10 @@ def paymentez_payment(up, card, logging, manual):
 
         if up.status == 'AC':
             # calcular next_payment_day
-            up.payment_date = up.calc_payment_date()
+            if manual:
+                up.payment_date = up.calc_payment_date(timezone.now())
+            else:
+                up.payment_date = up.calc_payment_date()
             # Fija la fecha de expiration del usuario
             logging.info("paymentez_payment(): New user expiration %d for user %s" % (up.recurrence, up.user.user_id))
             up.user.set_expiration(up.payment_date)
@@ -181,7 +189,7 @@ def paymentez_payment(up, card, logging, manual):
             if manual:
                 up.retries = up.retries + 1
             else:
-                # Agregar 5 dias a expiration
+                # Agregar N dias a expiration
                 delay = int(Setting.get_var('expiration_delay')) - 1
                 user_expiration = up.user.expiration + timedelta(days=delay)
                 up.user.set_expiration(user_expiration)
