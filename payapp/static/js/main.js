@@ -135,6 +135,7 @@ app.dataTablesPlugin = function (table, filters) {
 
               $.fn.dataTable.ext.search.push(
                 function (settings, searchData, index, rowData, counter) {
+                  
                   if (startDate != undefined) {
                     columnStringDate = searchData[columnNumber];
                     columnDate = moment(columnStringDate, 'DD/MM/YYYY');

@@ -77,6 +77,85 @@ def get_user(request, user_id):
     body = { 'status': 'success', 'value': ret }
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
+# Get all users (DataTables)
+# @require_http_methods(["GET"])
+# @login_required(login_url='login')
+# def get_all_users(request):
+#     try:
+#         records = User.objects.all().order_by('-modification_date')
+#     except:
+#         message = ''
+#         body = { 'status': 'error', 'message': message }
+#         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
+
+#     datatables          = request.GET
+#     draw                = int(datatables['draw'])
+#     length              = int(datatables['length'])
+#     search              = datatables['search[value]']
+#     records_total       = User.objects.all().count()
+#     records_filtered    = records_total
+
+#     # Search columns
+#     search_column_active        = datatables['columns[3][search][value]']
+#     search_column_country       = datatables['columns[4][search][value]']
+
+#     print search_column_active
+#     print search_column_country
+
+#     # Search
+#     if search:
+#         records = User.objects.filter(
+#                     Q(email__icontains = search) |
+#                     Q(user_id__icontains = search)
+#                   )
+#         records_total = records.count()
+#         records_filtered = records_total
+
+#     if search_column_active or search_column_country:
+#         records = User.objects.filter(
+#                     Q(country__icontains = search_column_country)
+#                   )
+#         records_total = records.count()
+#         records_filtered = records_total
+
+#     # Paginator
+#     paginator = Paginator(records, length)
+
+#     try:
+#         object_list = paginator.page(draw).object_list
+#     except PageNotAnInteger:
+#         object_list = paginator.page(draw).object_list
+#     except EmptyPage:
+#         object_list = paginator.page(paginator.num_pages).object_list
+
+#     data = []
+
+#     for user in object_list:
+#         card = user.get_card()
+#         has_recurrence = user.has_recurrence()
+
+#         ret = {}
+#         ret['card']                 = card.number
+#         ret['country']              = user.country.name
+#         ret['creation_date']        = user.creation_date
+#         ret['email']                = user.email
+#         ret['expiration']           = user.expiration
+#         ret['is_active']            = user.is_active
+#         ret['modification_date']    = user.modification_date
+#         ret['user_id']              = user.user_id
+#         ret['has_recurrence']       = has_recurrence
+
+#         data.append(ret)
+
+#     body = { 
+#         'data': data,
+#         'draw': draw,
+#         'recordsFiltered': records_filtered,
+#         'recordsTotal': records_total,
+#     }
+
+#     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
+
 # Get all users
 @require_http_methods(["GET"])
 @login_required(login_url='login')
