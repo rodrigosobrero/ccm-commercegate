@@ -361,18 +361,32 @@ class UserPayment(models.Model):
         else:
             return self.amount
 
-    def calc_payment_date(self):
+    @staticmethod        
+    def payday_calc(payment_date):
+        day = payment_date.day
+        if int(day) > 28:
+            return 28
+        else:
+            return int(day)
+        
+            
+    def calc_payment_date(self, date=None):
+        if date is None:
+            date = self.payment_date
+        else:
+            self.payday = self.payday_calc(date)
+            self.save()            
         # Obtengo cantidad de meses a sumar
         md = int(int(self.recurrence) / 30)
         # Sumo los meses
-        m = self.payment_date.month + md
+        m = date.month + md
         # Obtengo el mes resultante y los anios a sumar
         yd, month = divmod(m, 12)
         if month == 0:
             month = m - 12 * (yd - 1)
-            year = self.payment_date.year + yd - 1
+            year = date.year + yd - 1
         else:
-            year = self.payment_date.year + yd
+            year = date.year + yd
         # Sumo los anio
         self.payment_date = datetime(year, month, int(self.payday))
         #self.save()
