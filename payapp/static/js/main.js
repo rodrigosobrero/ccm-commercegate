@@ -303,7 +303,7 @@ app.renders.rePayActions = (data, type, row) => {
               <i class="fas fa-user fa-lg"></i>
              </a>
              <a href="javascript:void(0)"
-              onclick="app.modalRePayDetail('${row.user}')"
+              onclick="app.modalRePayDetail('${row.user_payment_id}')"
               class="btn btn-link btn-sm text-black-50" 
               role="button" data-toggle="tooltip" 
               data-placement="top" title="Historial de pagos">
@@ -366,8 +366,14 @@ app.renders.hisPayState = prm => {
 
 app.renders.hisPayActions = (data, type, row) => {
   let btn = '';
+  let rowBase64 = '';
   let rowData = JSON.stringify(row);
-  let rowBase64 = window.btoa(rowData);
+  
+  try {
+    rowBase64 = window.btoa(encodeURIComponent(rowData));
+  } catch (error) {
+    console.log(error);
+  }
 
   btn += `<a href="javascript:void(0)" 
             onclick="app.modalRePayUser('${row.user}')"
@@ -831,7 +837,14 @@ app.modalManualPay = prm => {
  * @param {string} prm
  */
 app.modalHisDetail = prm => {
-  let rowDecoded = window.atob(prm);
+  let rowDecoded = '';
+
+  try {
+    rowDecoded = decodeURIComponent(window.atob(prm));
+  } catch (error) {
+    console.log(error);
+  }
+  
   let row = JSON.parse(rowDecoded);
 
   this.modal({
@@ -1014,6 +1027,7 @@ app.navigation = () => {
           { 'title': 'Reintentos', 'data': 'retries' },
           { 'title': 'Mensaje', 'data': 'message', 'render': data => this.renders.rePayMessage(data) },
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => this.renders.rePayActions(data, type, row) },
+          { 'title': 'ID de Recurrencia', 'data': 'user_payment_id', 'visible': false },
         ],
         filters: [
           { column_number: 8, filter_label: 'Estado'},

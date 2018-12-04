@@ -26,7 +26,7 @@ urlpatterns = [
     url(r'^api/v1/api/users', get_all_users),
     url(r'^api/v1/api/payments/(?P<user_id>[\w\-]+)/(?P<records>[\w\-]+)', get_user_payment),
     url(r'^api/v1/api/payments', get_all_payments),
-    url(r'^api/v1/api/paymenthistory/(?P<user_id>[\w\-]+)/(?P<records>[\w\-]+)', get_payment_history),
+    url(r'^api/v1/api/paymenthistory/(?P<user_payment_id>[\w\-]+)/(?P<records>[\w\-]+)', get_payment_history),
     url(r'^api/v1/api/paymenthistory', get_all_payment_history),
 
     url(r'^ui/dashboard/', dashboard, name='dashboard'),
