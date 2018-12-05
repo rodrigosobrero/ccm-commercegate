@@ -7,6 +7,31 @@ app.config = {
   api: '/api/v1/api/',
   fullScreenState: false,
   tableSelector: '#table',
+  dataTableLang: {
+    // "processing":      "<div class='spinner'><img src='/static/img/spinner.svg' width='100'></div>",
+    "processing":      "Procesando...",
+    "sLengthMenu":     "Mostrar _MENU_ registros",
+    "sZeroRecords":    "No se encontraron resultados",
+    "sEmptyTable":     "Ningún dato disponible en esta tabla",
+    "sInfo":           "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+    "sInfoEmpty":      "Mostrando registros del 0 al 0 de un total de 0 registros",
+    "sInfoFiltered":   "(filtrado de un total de _MAX_ registros)",
+    "sInfoPostFix":    "",
+    "sSearch":         "Buscar:",
+    "sUrl":            "",
+    "sInfoThousands":  ".",
+    "sLoadingRecords": "&nbsp;",
+    "oPaginate": {
+      "sFirst":    "Primero",
+      "sLast":     "Último",
+      "sNext":     "Siguiente",
+      "sPrevious": "Anterior"
+    },
+    "oAria": {
+      "sSortAscending":  ": Activar para ordenar la columna de manera ascendente",
+      "sSortDescending": ": Activar para ordenar la columna de manera descendente"
+    }
+  }
 }
 
 /**
@@ -25,15 +50,13 @@ app.iniTable = prm => {
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'pdfHtml5', className: 'btn-sm btn-ccm' }
     ],
-    // processing: true,
     // serverSide: true,
+    // processing: true,
     bLengthChange: false,
     responsive: true,
     autoWidth: true,
     order: prm.order,
-    language: {
-      url: 'https://cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json'
-    },
+    language: app.config.dataTableLang,
     columns: prm.columns,
     searchCols: prm.searchCols,
     initComplete:
@@ -63,9 +86,9 @@ app.iniTable = prm => {
       },
   });
 
-  table.on('processing.dt', (e, settings, processing) => { 
-    processing ? app.preloader(true) : app.preloader()
-  });
+  // table.on('processing.dt', (e, settings, processing) => { 
+  //   processing ? app.preloader(true) : app.preloader()
+  // });
 }
 
 /**
@@ -590,7 +613,7 @@ app.modalUserActivate = prm => {
       }).fail(() => {
         alert = '<div class="alert alert-danger" role="alert">Error al intentar activar el usuario.</div>';
       }).always(() => {
-        $(app.config.tableSelector).DataTable().ajax.reload();
+        $(app.config.tableSelector).DataTable().ajax.reload(null, false);
         $('.modal-body').prepend(alert);
         this.loadingButton({
           selector: '#btnActivateUser'
@@ -629,7 +652,7 @@ app.modalUserDesactivate = prm => {
         })
     }).done(() => {
       alert = '<div class="alert alert-success" role="alert">Usuario expirado correctamente.</div>'
-      $(app.config.tableSelector).DataTable().ajax.reload();
+      $(app.config.tableSelector).DataTable().ajax.reload(null, false);
     }).fail(() => {
       alert = '<div class="alert alert-danger" role="alert">Error al intentar expirar el usuario.</div>';
     }).always(() => {
@@ -682,7 +705,7 @@ app.modalRePayStop = (user, id) => {
           })
       }).done(() => {
         alert = '<div class="alert alert-success" role="alert">Recurrencia desactivada correctamente.</div>';
-        $(app.config.tableSelector).DataTable().ajax.reload();
+        $(app.config.tableSelector).DataTable().ajax.reload(null, false);
       }).fail(() => {
         alert = '<div class="alert alert-danger" role="alert">Error al intentar desactivar la concurrencia.</div>';
       }).always(() => {
@@ -824,7 +847,7 @@ app.modalManualPay = prm => {
     }).fail(resp => {
       alert = `<div class="alert alert-danger" role="alert">${resp.responseJSON.message}</div>`;
     }).always(() => {
-      $(app.config.tableSelector).DataTable().ajax.reload();
+      $(app.config.tableSelector).DataTable().ajax.reload(null, false);
       $('.modal-body').prepend(alert);
       this.loadingButton({
         selector: '#btnManualPay'
