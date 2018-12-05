@@ -177,6 +177,7 @@ def get_all_payments(request):
         ret['disc_pct']             = payment.disc_pct
         ret['enabled']              = payment.enabled
         ret['message']              = payment.message
+        ret['is_active']            = payment.user.is_active
         ret['modification_date']    = payment.modification_date
         ret['payday']               = payment.payday
         ret['payment_date']         = payment.payment_date
