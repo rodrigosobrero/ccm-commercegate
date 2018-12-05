@@ -18,14 +18,8 @@ app.config = {
  */
 app.iniTable = prm => {
   let table = $(app.config.tableSelector).DataTable({
-    ajax: {
-      url: prm.api,
-      beforeSend:
-        function (request) {
-          request.setRequestHeader('Content-Encoding', 'gzip');
-        }
-    },
-    // ajax: prm.api,
+    ajax: prm.api,
+    deferRender: true,
     buttons: [
       { extend: 'excelHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
