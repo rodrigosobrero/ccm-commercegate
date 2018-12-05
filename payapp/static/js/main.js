@@ -18,7 +18,14 @@ app.config = {
  */
 app.iniTable = prm => {
   let table = $(app.config.tableSelector).DataTable({
-    ajax: prm.api,
+    ajax: {
+      url: prm.api,
+      beforeSend:
+        function (request) {
+          request.setRequestHeader('Content-Encoding', 'gzip');
+        }
+    },
+    // ajax: prm.api,
     buttons: [
       { extend: 'excelHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
@@ -586,10 +593,10 @@ app.modalUserActivate = prm => {
           })
       }).done(() => {
         alert = '<div class="alert alert-success" role="alert">Usuario activado correctamente.</div>';
-        $(app.config.tableSelector).DataTable().ajax.reload();
       }).fail(() => {
         alert = '<div class="alert alert-danger" role="alert">Error al intentar activar el usuario.</div>';
       }).always(() => {
+        $(app.config.tableSelector).DataTable().ajax.reload();
         $('.modal-body').prepend(alert);
         this.loadingButton({
           selector: '#btnActivateUser'
@@ -820,10 +827,10 @@ app.modalManualPay = prm => {
         })
     }).done(() => {
       alert = `<div class="alert alert-success" role="alert">Pago efectuado correctamente.</div>`;
-      $(app.config.tableSelector).DataTable().ajax.reload();
     }).fail(resp => {
       alert = `<div class="alert alert-danger" role="alert">${resp.responseJSON.message}</div>`;
     }).always(() => {
+      $(app.config.tableSelector).DataTable().ajax.reload();
       $('.modal-body').prepend(alert);
       this.loadingButton({
         selector: '#btnManualPay'
