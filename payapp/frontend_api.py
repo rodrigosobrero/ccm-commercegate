@@ -11,7 +11,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect
 
-from models import User, UserPayment, PaymentHistory, Setting
+from models import User, UserPayment, PaymentHistory, Setting, Country
 
 import json
 import logging
@@ -159,19 +159,23 @@ def get_all_payments(request):
         body = { 'status': 'error', 'message': 'No se puede consultar la lista de pagos recurrentes' }
         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
 
+    countries = Country.get_all()
     value = []
 
     for payment in payments:
+        up_data = payment.user_payment_id.split("_")
+        print up_data
+        user_id = "%s_%s_%s" % (up_data[1], up_data[2], up_data[3])
+
         ret                         = {}
         ret['amount']               = payment.amount
         ret['channel']              = payment.channel
-        ret['country']              = payment.user.country.name
+        ret['country']              = countries[up_data[1]]["name"]
         ret['creation_date']        = payment.creation_date
-        ret['currency']             = payment.currency.name
+        ret['currency']             = countries[up_data[1]]["currency"]
         ret['disc_counter']         = payment.disc_counter
         ret['disc_pct']             = payment.disc_pct
         ret['enabled']              = payment.enabled
-        ret['is_active']            = payment.user.is_active
         ret['message']              = payment.message
         ret['modification_date']    = payment.modification_date
         ret['payday']               = payment.payday
@@ -180,7 +184,7 @@ def get_all_payments(request):
         ret['retries']              = payment.retries
         ret['status']               = payment.status
         ret['user_payment_id']      = payment.user_payment_id
-        ret['user']                 = payment.user.user_id
+        ret['user']                 = user_id
 
         value.append(ret)
 
