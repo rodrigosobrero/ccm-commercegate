@@ -86,9 +86,9 @@ app.iniTable = prm => {
       },
   });
 
-  // table.on('processing.dt', (e, settings, processing) => { 
-  //   processing ? app.preloader(true) : app.preloader()
-  // });
+  table.on('processing.dt', (e, settings, processing) => { 
+    processing ? app.preloader(true) : app.preloader()
+  });
 }
 
 /**
