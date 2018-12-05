@@ -68,6 +68,14 @@ class Country(models.Model):
     def __unicode__(self):
         return self.name
 
+    @classmethod
+    def get_all(cls):
+        countries = cls.objects.all()
+        ret = {}
+        for country in countries:
+            ret[country.code.upper()] = {"name": country.name, "currency": country.currency.name}
+        return ret
+
 
 class Integrator(models.Model):
     METHOD = (('TO', 'TOKEN'),
