@@ -1029,7 +1029,7 @@ app.navigation = () => {
           { 'title': 'Fecha de Modificación', 'type': 'date-eu', 'data': 'modification_date', 'render': data => this.renders.date(data) },
           { 'title': 'Fecha de Pago', 'type': 'date-eu', 'data': 'payment_date', 'render': data => this.renders.date(data) },
           { 'title': 'Recurrencia', 'data': 'recurrence' },
-          // { 'title': 'Activo', 'data': 'is_active', 'visible': false },
+          { 'title': 'Activo', 'data': 'is_active', 'visible': false },
           { 'title': 'Estado', 'data': 'status', 'render': data => this.renders.rePayState(data) },
           { 'title': 'Reintentos', 'data': 'retries' },
           { 'title': 'Mensaje', 'data': 'message', 'render': data => this.renders.rePayMessage(data) },
