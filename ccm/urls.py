@@ -2,7 +2,7 @@ from django.conf.urls import url
 from django.contrib import admin
 
 from payapp.views import create_payment, payment_discount, cancel_payment, change_token_card, user_status, get_cards, get_enabled_card, change_user_email, refund, delete_card
-from payapp.frontend_api import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history, expireuser, activateuser, deleteuserpayment, manual_payment
+from payapp.frontend_api import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history, expireuser, activateuser, deleteuserpayment, manual_payment, filter_countries, filter_status_recurrence, filter_status_history, filter_recurrence, filter_boolean
 from payapp.frontend_views import login_view, logout_view, dashboard, users, userpayments, paymenthistory
 
 from payapp.callback_views import callback_paymentez
@@ -28,6 +28,12 @@ urlpatterns = [
     url(r'^api/v1/api/payments', get_all_payments),
     url(r'^api/v1/api/paymenthistory/(?P<user_payment_id>[\w\-]+)/(?P<records>[\w\-]+)', get_payment_history),
     url(r'^api/v1/api/paymenthistory', get_all_payment_history),
+
+    url(r'^api/v1/api/filter/boolean', filter_boolean),
+    url(r'^api/v1/api/filter/countries', filter_countries),
+    url(r'^api/v1/api/filter/recurrence', filter_recurrence),
+    url(r'^api/v1/api/filter/status-recurrence', filter_status_recurrence),
+    url(r'^api/v1/api/filter/status-paymenthistory', filter_status_history),
 
     url(r'^ui/dashboard/', dashboard, name='dashboard'),
 

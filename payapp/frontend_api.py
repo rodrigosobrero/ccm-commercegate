@@ -5,7 +5,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.functions import Lower
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -32,26 +32,91 @@ http_PAYMENT_REQUIRED = 402
 http_INTERNAL_ERROR = 500
 LIST_ROWS_DISPLAY = 20
 
-STATUS_USER_PAYMENT = (('PE', 'Pendiente'),
-                       ('AC', 'Activo'),
-                       ('CA', 'Cancelado'),
-                       ('ER', 'Error'),
-                       ('RE', 'Error en recurrencia'))
+# Boolean (Filter)
+@require_http_methods(["GET"])
+@login_required(login_url='login')
+def filter_boolean(request):
+    data = [ { 'key': 'Si', 'value': 'Si' }, { 'key': 'No', 'value': 'No' } ]
 
-STATUS_PAYMENT_HISTORY = (('P', 'Processing'),
-                          ('W', 'Waiting callback'),
-                          ('A', 'Approved'),
-                          ('R', 'Rejected'),
-                          ('C', 'Cancelled'),
-                          ('E', 'Error'))
+    body = { 'status': 'success', 'data': data }
 
-CHANNEL = (('E', ''),
-           ('U', 'User'),
-           ('R', 'Reply'),
-           ('C', 'Callback'),
-           ('T', 'Timeout'),
-           ('F', 'Refund'),
-           ('X', 'Claxson'))
+    return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
+
+# Get all countries (Filter)
+@require_http_methods(["GET"])
+@login_required(login_url='login')
+def filter_countries(request):
+    try:
+        countries = Country.objects.all()
+    except ObjectDoesNotExist:
+        body = { 'status': 'error', 'message': 'No se puede consultar la lista de paises' }
+        return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
+
+    data = []
+
+    for country in countries:
+        ret             = {}
+        ret['key']      = country.name
+        ret['value']    = country.name
+
+        data.append(ret)
+
+    body = { 'status': 'success', 'data': data }
+
+    return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
+
+# Get recurrence all status (Filter)
+@require_http_methods(["GET"])
+@login_required(login_url='login')
+def filter_status_recurrence(request):
+    dict_status = dict(UserPayment.STATUS)
+
+    data = []
+
+    for key, value in dict_status.iteritems():
+        ret             = {}
+        ret['key']      = value
+        ret['value']    = key
+
+        data.append(ret)
+
+    body = { 'status': 'success', 'data': data }
+
+    return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK) 
+
+# Get recurrencia (Filter)
+@require_http_methods(["GET"])
+@login_required(login_url='login')
+def filter_recurrence(request):
+    data = []
+
+    prices = Setting.get_var('packages_recurrence').split(",")
+
+    for price in prices:
+        data.append({'key': price, 'value': price})
+
+    body = { 'status': 'success', 'data': data }
+
+    return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK) 
+
+# Get all status history (Filter)
+@require_http_methods(["GET"])
+@login_required(login_url='login')
+def filter_status_history(request):
+    dict_status = dict(PaymentHistory.STATUS)
+
+    data = []
+
+    for key, value in dict_status.iteritems():
+        ret             = {}
+        ret['key']      = value
+        ret['value']    = key
+
+        data.append(ret)
+
+    body = { 'status': 'success', 'data': data }
+
+    return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK) 
 
 # Get user by id
 @require_http_methods(["GET"])
@@ -77,19 +142,80 @@ def get_user(request, user_id):
     body = { 'status': 'success', 'value': ret }
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
-# Get all users
+# Get all users (DataTables)
 @require_http_methods(["GET"])
 @login_required(login_url='login')
 def get_all_users(request):
     try:
-        users = User.objects.all().order_by('-modification_date')
+        records = User.objects.all().order_by('-modification_date')
     except ObjectDoesNotExist:
-        body = { 'status': 'error', 'message': 'No se puede consultar la lista de usuarios' }
+        body = { 'status': 'error', 'message': '' }
         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
 
-    value = []
+    datatables = request.GET
+    draw = int(datatables['draw'])
+    start = int(datatables['start'])
+    length = int(datatables['length'])
+    search = datatables['search[value]']
+    records_total = records.count()
+    records_filtered = records_total
 
-    for user in users:
+    # Columns Dict
+    columns_dic = {
+        '3': 'country__name',
+        '4': 'country__name'
+    }
+
+    # Filter
+    def filter_table(filter_col, column_name):
+        filter_input = filter_col.replace('^', '').replace('$', '')
+
+        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+
+        if filter_input == 'Si':
+            filtered_records = records.filter(expiration__gt = date.today())
+        elif filter_input == 'No':
+            filtered_records = records.filter(expiration__lt = date.today())
+
+        return filtered_records
+
+    # Test
+    for key, value in columns_dic.iteritems():
+        for param in datatables:
+            if len(param) > 8 and param[8] == key:
+                value = datatables['columns[' + key + '][search][value]']
+
+                if value:
+                    records = filter_table(value, key)
+                    records_total = records.count()
+                    records_filtered = records_total
+                    break
+
+    # Search
+    if search:
+        records = User.objects.filter(
+                    Q(email__icontains = search) |
+                    Q(user_id__icontains = search) |
+                    Q(country__name__icontains = search) |
+                    Q(expiration__icontains = search)
+                  )
+        records_total = records.count()
+        records_filtered = records_total
+
+    # Paginator 
+    paginator = Paginator(records, length)
+    page_number = start / length + 1
+
+    try:
+        object_list = paginator.page(page_number).object_list
+    except PageNotAnInteger:
+        object_list = paginator.page(1).object_list
+    except EmptyPage:
+        object_list = paginator.page(1).object_list
+
+    data = []
+
+    for user in object_list:
         card = user.get_card()
         has_recurrence = user.has_recurrence()
 
@@ -99,14 +225,20 @@ def get_all_users(request):
         ret['creation_date']        = user.creation_date
         ret['email']                = user.email
         ret['expiration']           = user.expiration
-        ret['has_recurrence']       = has_recurrence
         ret['is_active']            = user.is_active
         ret['modification_date']    = user.modification_date
         ret['user_id']              = user.user_id
+        ret['has_recurrence']       = has_recurrence
 
-        value.append(ret)
+        data.append(ret)
 
-    body = { 'status': 'success', 'data': value }
+    body = { 
+        'data': data,
+        'draw': draw,
+        'recordsFiltered': records_filtered,
+        'recordsTotal': records_total,
+    }
+
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
 # Get user payment by user id
@@ -149,22 +281,90 @@ def get_user_payment(request, user_id, records='all'):
     body = { 'status': 'success', 'data': value, 'records': count }
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
-# All users payments
+# Get all users payments (DataTables)
 @require_http_methods(["GET"])
 @login_required(login_url='login')
 def get_all_payments(request):
     try:
-        payments = UserPayment.objects.all().order_by('-modification_date')
+        records = UserPayment.objects.all().order_by('-modification_date')
     except ObjectDoesNotExist:
         body = { 'status': 'error', 'message': 'No se puede consultar la lista de pagos recurrentes' }
         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
 
-    countries = Country.get_all()
-    value = []
+    datatables = request.GET
+    draw = int(datatables['draw'])
+    length = int(datatables['length'])
+    start = int(datatables['start'])
+    search = datatables['search[value]']
+    records_total = records.count()
+    records_filtered = records_total
 
-    for payment in payments:
+    # Columns Dict
+    columns_dic = {
+        '3': 'user__country__name',
+        '4': 'user__country__name',
+        '5': 'user__country__name',
+        '6': 'recurrence',
+        '8': 'status',
+    }
+
+    # Filter
+    def filter_table(filter_col, column_name):
+        filter_input = filter_col.replace('^', '').replace('$', '')
+
+        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+
+        if len(filter_input) == 51:
+            date = filter_input.split(',')
+            filtered_records = records.filter(modification_date__range = [date[0], date[1]])
+
+        return filtered_records
+
+    # Test
+    for key, value in columns_dic.iteritems():
+        for param in datatables:
+            if len(param) > 8 and param[8] == key:
+                value = datatables['columns[' + key + '][search][value]']
+
+                if value:
+                    records = filter_table(value, key)
+                    records_total = records.count()
+                    records_filtered = records_total
+                    break
+
+    # Search
+    if search:
+        records = UserPayment.objects.filter(
+                    Q(user__user_id__icontains = search) |
+                    Q(amount__icontains = search) |
+                    Q(currency__name__icontains = search) |
+                    Q(user__country__name__icontains = search) |
+                    Q(recurrence__icontains = search) |
+                    Q(retries__icontains = search) |
+                    Q(message__icontains = search) |
+                    Q(payment_date__icontains = search) |
+                    Q(payday__icontains = search) |
+                    Q(message__icontains = search)
+                  )
+        records_total = records.count()
+        records_filtered = records_total
+
+    # Paginator 
+    paginator = Paginator(records, length)
+    page_number = start / length + 1
+
+    try:
+        object_list = paginator.page(page_number).object_list
+    except PageNotAnInteger:
+        object_list = paginator.page(1).object_list
+    except EmptyPage:
+        object_list = paginator.page(1).object_list
+
+    countries = Country.get_all()
+    data = []
+
+    for payment in object_list:
         up_data = payment.user_payment_id.split("_")
-        print up_data
         user_id = "%s_%s_%s" % (up_data[1], up_data[2], up_data[3])
 
         ret                         = {}
@@ -187,9 +387,15 @@ def get_all_payments(request):
         ret['user_payment_id']      = payment.user_payment_id
         ret['user']                 = user_id
 
-        value.append(ret)
+        data.append(ret)
 
-    body = { 'status': 'success', 'data': value }
+    body = { 
+        'data': data,
+        'draw': draw,
+        'recordsFiltered': records_filtered,
+        'recordsTotal': records_total,
+    }
+
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
 # Get payment history by user id
@@ -252,32 +458,103 @@ def get_payment_history(request, user_payment_id, records='all'):
     body = { 'status': 'success', 'data': value, 'records': count }
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
-# Get all payments history
+# Get all payments history (DataTables)
 @require_http_methods(["GET"])
 @login_required(login_url='login')
 def get_all_payment_history(request):
     try:
-        payments = PaymentHistory.objects.all().order_by('-modification_date')
+        records = PaymentHistory.objects.all().order_by('-modification_date')
     except ObjectDoesNotExist:
         body = { 'status': 'error', 'message': 'No se puede consultar la lista de historial de pagos' }
         return HttpResponse(json.dumps(body), content_type='application/json', status=http_BAD_REQUEST)
 
-    value = []
+    datatables = request.GET
+    draw = int(datatables['draw'])
+    length = int(datatables['length'])
+    start = int(datatables['start'])
+    search = datatables['search[value]']
+    records_total = records.count()
+    records_filtered = records_total
 
-    for payment in payments:
+    # Columns Dict
+    columns_dic = {
+        '2': 'status',
+        '4': 'status',
+        '6': 'status',
+    }
+
+    # Filter
+    def filter_table(filter_col, column_name):
+        filter_input = filter_col.replace('^', '').replace('$', '')
+
+        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+
+        if filter_input == 'Si':
+            filtered_records = records.filter(manual = True)
+        elif filter_input == 'No':
+            filtered_records = records.filter(manual = False)
+        elif len(filter_input) == 51:
+            date = filter_input.split(',')
+            filtered_records = records.filter(modification_date__range = [date[0], date[1]])
+
+        return filtered_records
+
+    # Test
+    for key, value in columns_dic.iteritems():
+        for param in datatables:
+            if len(param) > 8 and param[8] == key:
+                value = datatables['columns[' + key + '][search][value]']
+                
+                if value:
+                    records = filter_table(value, key)
+                    records_total = records.count()
+                    records_filtered = records_total
+                    break
+
+    # Search
+    if search:
+        records = UserPayment.objects.filter(
+                    Q(user__user_id__icontains = search) |
+                    Q(amount__icontains = search) |
+                    Q(currency__name__icontains = search) |
+                    Q(user__country__name__icontains = search) |
+                    Q(recurrence__icontains = search) |
+                    Q(retries__icontains = search) |
+                    Q(message__icontains = search) |
+                    Q(payment_date__icontains = search) |
+                    Q(payday__icontains = search) |
+                    Q(message__icontains = search)
+                  )
+        records_total = records.count()
+        records_filtered = records_total
+
+    # Paginator 
+    paginator = Paginator(records, length)
+    page_number = start / length + 1
+
+    try:
+        object_list = paginator.page(page_number).object_list
+    except PageNotAnInteger:
+        object_list = paginator.page(1).object_list
+    except EmptyPage:
+        object_list = paginator.page(1).object_list
+
+    data = []
+
+    for payment in object_list:
         payment.description = ''
         payment.code = ''
 
         try:
-            data = json.loads(payment.message.replace(
+            message = json.loads(payment.message.replace(
                 "'", "\"").replace("u\"", "\"").replace("None", "null"))
         except:
             continue
-        if 'transaction' in data:
-            if 'message' in data['transaction']:
-                payment.description = data['transaction']['message']
-            if 'authorization_code' in data['transaction']:
-                payment.code = data['transaction']['authorization_code']
+        if 'transaction' in message:
+            if 'message' in message['transaction']:
+                payment.description = message['transaction']['message']
+            if 'authorization_code' in message['transaction']:
+                payment.code = message['transaction']['authorization_code']
 
         ret = {}
         ret['amount']               = payment.amount
@@ -299,9 +576,15 @@ def get_all_payment_history(request):
         ret['user']                 = payment.user_payment.user.user_id
         ret['vat_amount']           = payment.vat_amount
 
-        value.append(ret)
+        data.append(ret)
 
-    body = { 'status': 'success', 'data': value }
+    body = { 
+        'data': data,
+        'draw': draw,
+        'recordsFiltered': records_filtered,
+        'recordsTotal': records_total,
+    }
+
     return HttpResponse(json.dumps(body, cls=DjangoJSONEncoder), content_type='application/json', status=http_REQUEST_OK)
 
 @require_http_methods(["GET", "POST"])

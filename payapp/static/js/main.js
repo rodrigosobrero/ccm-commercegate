@@ -30,7 +30,18 @@ app.config = {
     "oAria": {
       "sSortAscending":  ": Activar para ordenar la columna de manera ascendente",
       "sSortDescending": ": Activar para ordenar la columna de manera descendente"
-    }
+    },
+    "filters": {
+      "Active": "Activo",
+      "Cancelled": "Cancelado",
+      "Pending": "Pendiente",
+      "Recurring Error": "Error en recurrencia",
+      "Processing": "Procesando",
+      "Waiting callback": "Esperando callback",
+      "Approved": "Aprobado",
+      "Rejected": "Rechazado",
+      "Cancelled": "Cancelado",
+    },
   }
 }
 
@@ -43,14 +54,26 @@ app.config = {
  */
 app.iniTable = prm => {
   let table = $(app.config.tableSelector).DataTable({
-    ajax: prm.api,
+    // ajax: prm.api,
+    ajax: {
+      url: prm.api,
+      data:
+        (data) => {
+          if (app.dateRangeValues) {
+            app.dateRangeValues.forEach(element => {  
+              data.columns[element.index].search.value = element.value;
+            });
+          }
+        }
+    },
     deferRender: true,
     buttons: [
       { extend: 'excelHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'csvHtml5', className: 'btn-sm btn-ccm' },
       { extend: 'pdfHtml5', className: 'btn-sm btn-ccm' }
     ],
-    // serverSide: true,
+    serverSide: true,
+    // stateSave: true,
     // processing: true,
     bLengthChange: false,
     responsive: true,
@@ -97,7 +120,9 @@ app.iniTable = prm => {
  * @param {array} filters - 
  *        [{ filter_type: select (default) | date_range,
  *           column_number: número de columna, 
- *           filter_label: etiqueta del filtro }]
+ *           filter_label: etiqueta del filtro,
+ *           filter_api: dirección para utilizar API en los select
+ *        }]
  */
 app.dataTablesPlugin = function (table, filters) {
   if (table && filters) {
@@ -124,8 +149,10 @@ app.dataTablesPlugin = function (table, filters) {
 
           $(select).prependTo('#table-toolbar-elem-' + id);
 
-          $('#table-select-filter-' + id).on('change', function () {
-            var val = $.fn.dataTable.util.escapeRegex(
+          let inpSel = $('#table-select-filter-' + id);
+
+          inpSel.on('change', function () {
+            let val = $.fn.dataTable.util.escapeRegex(
               $(this).val()
             );
     
@@ -133,11 +160,31 @@ app.dataTablesPlugin = function (table, filters) {
               .search(val ? '^' + val + '$' : '', true, false)
               .draw();
           });
-      
-          column.cells('', column[0]).render('display').sort().unique().each(function (d, j) {
-            var val = $('<div/>').html(d).text();
-            $('#table-select-filter-' + id).append('<option value="' + val + '">' + val + '</option>')
-          });
+
+          if (element.filter_api) {
+            $.ajax({
+              url: app.config.api + element.filter_api,
+              method: 'GET'
+            }).done((resp) => {
+              if (resp.data) {
+                resp.data.forEach(element => {
+                  // Traducción de filtro desplegable
+                  Object.keys(app.config.dataTableLang.filters).forEach(key => {
+                    if (key == element.key) {
+                      element.key = app.config.dataTableLang.filters[key]
+                    }
+                  });
+
+                  inpSel.append('<option value="' + element.value + '">' + element.key + '</option>')
+                });
+              }
+            });
+          } else {
+            column.cells('', column[0]).render('display').sort().unique().each(function (d, j) {
+              let val = $('<div/>').html(d).text();
+              $('#table-select-filter-' + id).append('<option value="' + val + '">' + val + '</option>')
+            });
+          }
         });
       } else if (element.filter_type == 'date_range') {
         let dateRange = `<div class="input-group input-group-sm">
@@ -157,26 +204,10 @@ app.dataTablesPlugin = function (table, filters) {
               endDate = picker.endDate;
               columnNumber = $(this).data('filter-column');
 
-              $.fn.dataTable.ext.search.push(
-                function (settings, searchData, index, rowData, counter) {
-                  
-                  if (startDate != undefined) {
-                    columnStringDate = searchData[columnNumber];
-                    columnDate = moment(columnStringDate, 'DD/MM/YYYY');
-
-                    if (startDate == '' && columnDate.isBefore(endDate)) {
-                      return true
-                    } else if (endDate == '' && columnDate.isAfter(startDate)) {
-                      return true
-                    } else if (columnDate.isAfter(startDate) && columnDate.isBefore(endDate)) {
-                      return true
-                    } else {
-                      return false
-                    }
-                  }
-                  return false
-                }
-              );
+              app.saveDateRange({
+                index: element.column_number,
+                value: moment(startDate).format() + ',' + moment(endDate).format()
+              });
       
               table.fnDraw();
             });
@@ -199,6 +230,16 @@ app.dataTablesPlugin = function (table, filters) {
       id++;
     });
   }
+}
+
+/**
+ * Guardar data inputs daterange
+ * @param {string} prm.index
+ * @param {string} prm.value
+ */
+app.saveDateRange = prm => {
+  app.dateRangeValues = app.dateRangeValues ? app.dateRangeValues : [];
+  app.dateRangeValues.push({ index: prm.index, value: prm.value });
 }
 
 /**
@@ -858,120 +899,99 @@ app.modalManualPay = prm => {
 
 /**
  * Historial de pago - Detalle
- * @param {string} prm
+ * @param {string} prm - Base64
  */
 app.modalHisDetail = prm => {
   let rowDecoded = '';
+  let modalBody = '';
+  let row = '';
 
   try {
     rowDecoded = decodeURIComponent(window.atob(prm));
+    row = JSON.parse(rowDecoded);
+    modalBody = `<span class="badge badge-light">Usuario ${row.user}</span>
+                  <hr>
+                  <div class="card mt-3">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col">
+                          <p><b>ID de Pago:</b> ${row.payment_id}</p>
+                          <p><b>ID de Recurrencia:</b> ${row.user_payment}</p>
+                          <p><b>Código:</b> ${row.code}</p>
+                          <p><b>Tarjeta de Crédito:</b> ${row.card_id}</p>
+                          <p><b>Número Tarjeta de Crédito:</b> ${this.renders.creditCard(row.card)}</p>
+                          <p><b>Estado:</b> ${this.renders.hisPayState(row.status)}</p>
+                          <p><b>Integrador:</b> ${row.integrator} (${row.gateway_id})</p>
+                        </div>
+                        <div class="col-5">
+                          <p><b>Monto:</b> ${row.amount}</p>
+                          <p><b>Impuesto:</b> ${row.vat_amount}</p>
+                          <p><b>Neto:</b> ${row.taxable_amount}</p>
+                          <p><b>Descuento:</b> ${row.disc_pct}</p>
+                          <p><b>Descripción:</b> ${row.description}</p>
+                          <p><b>Mensaje:</b> <a href="#message" 
+                                                role="button" aria-expanded="false" 
+                                                aria-controls="message"
+                                                data-toggle="collapse" 
+                                                class="badge badge-secondary">
+                                                  <span>Ver mensaje</span>
+                                                  <span style="display:none;">Ocultar mensaje</span>
+                                                </a>
+                          </p>
+                          <p><b>Pago manual:</b> ${this.renders.boolean(row.manual)}</p>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col">
+                          <div class="collapse multi-collapse" id="message">
+                            <hr>
+                            <h6>Mensaje</h6>
+                            <p>${row.message}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
   } catch (error) {
-    console.log(error);
+    modalBody = '<p>Error al obtener el detalle del pago.</p>'
   }
-  
-  let row = JSON.parse(rowDecoded);
 
   this.modal({
     class: 'modal-lg',
     title: 'Detalle de pago',
-    body: `<span class="badge badge-light">Usuario ${row.user}</span>
-           <hr>
-           <div class="card mt-3">
-            <div class="card-body">
-              <div class="row">
-                <div class="col">
-                  <p><b>ID de Pago:</b> ${row.payment_id}</p>
-                  <p><b>ID de Recurrencia:</b> ${row.user_payment}</p>
-                  <p><b>Código:</b> ${row.code}</p>
-                  <p><b>Tarjeta de Crédito:</b> ${row.card_id}</p>
-                  <p><b>Número Tarjeta de Crédito:</b> ${this.renders.creditCard(row.card)}</p>
-                  <p><b>Estado:</b> ${this.renders.hisPayState(row.status)}</p>
-                  <p><b>Integrador:</b> ${row.integrator} (${row.gateway_id})</p>
-                </div>
-                <div class="col-5">
-                  <p><b>Monto:</b> ${row.amount}</p>
-                  <p><b>Impuesto:</b> ${row.vat_amount}</p>
-                  <p><b>Neto:</b> ${row.taxable_amount}</p>
-                  <p><b>Descuento:</b> ${row.disc_pct}</p>
-                  <p><b>Descripción:</b> ${row.description}</p>
-                  <p><b>Mensaje:</b> <a href="#message" 
-                                        role="button" aria-expanded="false" 
-                                        aria-controls="message"
-                                        data-toggle="collapse" 
-                                        class="badge badge-secondary">
-                                          <span>Ver mensaje</span>
-                                          <span style="display:none;">Ocultar mensaje</span>
-                                        </a>
-                  </p>
-                  <p><b>Pago manual:</b> ${this.renders.boolean(row.manual)}</p>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col">
-                  <div class="collapse multi-collapse" id="message">
-                    <hr>
-                    <h6>Mensaje</h6>
-                    <p>${row.message}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-           </div>`
+    body: modalBody
   });
 
   $('.modal [role=button]').click(() => {
     $('.modal [role=button] span').toggle();
-  })
+  });
 }
 
 /**
- * Filtro (captura parámetro "filter" por URL)
- * @param {string} prm
- * @todo Mejorar creación de array de búsqueda
+ * Filtro por URL
+ * @param {string} field - Campo a filtrar (estado o usuario)
+ * @param {string} key - Valor a filtrar
  */
 app.columnSearch = (field, key) => {
   let search = [];
+  let columns = 13;
 
-  if (field == 'recurringpay') {
+  if (field == 'estado' && key) {
+    for (let index = 0; index < columns; index++) {
+      search.push(null);
+    }
+
     switch (key) {
       case 'error':
-        search = [
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          { 'search': 'Error en recurrencia' }
-        ]
+        search[8] = { 'search': 'Error en recurrencia' };
         break;
-      case 'erroract':
-        search = [
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          { 'search': 'true' },
-          { 'search': 'Error en recurrencia' }
-        ]
+      case 'error_activo':
+        search[7] = { 'search': 'true' };
+        search[8] = { 'search': 'Error en recurrencia' };
         break;
-      case 'errordes':
-        search = [
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          { 'search': 'false' },
-          { 'search': 'Error en recurrencia' }
-        ]
+      case 'error_expirado':
+        search[7] = { 'search': 'false' };
+        search[8] = { 'search': 'Error en recurrencia' };
         break;
     }
   } else if (field == 'usuario' && key) {
@@ -991,17 +1011,19 @@ app.resetFilters = () => {
 
   $.fn.dataTable.ext.search = [];
 
+  delete app.dateRangeValues;
+
   table
     .search('')
     .columns().search('')
     .draw();
 
   $('.table-toolbar')
-      .find('select')
-      .val('');
+    .find('select, input[name=search]')
+    .val('');
 
   $('.table-toolbar')
-    .find('input[type=text]')
+    .find('input[name=daterange]')
     .val('Todos');
 }
 
@@ -1028,8 +1050,8 @@ app.navigation = () => {
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => this.renders.usersActions(data, type, row) },
         ],
         filters: [
-          { column_number: 4, filter_label: 'País' },
-          { column_number: 3, filter_label: 'Activo' },
+          { column_number: 4, filter_label: 'País', filter_api: 'filter/countries' },
+          { column_number: 3, filter_label: 'Activo', filter_api: 'filter/boolean' },
         ],
         order: [[ 5, "desc" ]]
       });
@@ -1054,11 +1076,11 @@ app.navigation = () => {
           { 'title': 'ID de Recurrencia', 'data': 'user_payment_id', 'visible': false },
         ],
         filters: [
-          { column_number: 8, filter_label: 'Estado'},
-          { column_number: 6, filter_label: 'Recurrencia'},
+          { column_number: 8, filter_label: 'Estado', filter_api: 'filter/status-recurrence' },
+          { column_number: 6, filter_label: 'Recurrencia', filter_api: 'filter/recurrence'},
           { filter_type: 'date_range', column_number: 5, filter_label: 'Pago' },
           { filter_type: 'date_range', column_number: 4, filter_label: 'Modificación' },
-          { column_number: 3, filter_label: 'País'},
+          { column_number: 3, filter_label: 'País', filter_api: 'filter/countries' },
         ],
         order: [[ 4, "desc" ]]
       });
@@ -1079,9 +1101,9 @@ app.navigation = () => {
           { 'title': 'Acciones', 'orderable': false, 'render': (data, type, row) => app.renders.hisPayActions(data, type, row) },
         ],
         filters: [
-          { column_number: 2, filter_label: 'Estado' },
+          { column_number: 2, filter_label: 'Estado', filter_api: 'filter/status-paymenthistory' },
           { filter_type: 'date_range', column_number: 4, filter_label: 'Modificación' },
-          { column_number: 6, filter_label: 'Manual' },
+          { column_number: 6, filter_label: 'Manual', filter_api: 'filter/boolean' },
         ],
         order: [[ 4, "desc" ]]
       });

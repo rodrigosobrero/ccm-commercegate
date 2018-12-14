@@ -15,7 +15,7 @@
       <div class="card-body text-center">
         <span class="indicator text-light">{{ userpaymentserrors }}</span>
         <p class="text-uppercase text-light">Con error en recurrencia</p>
-        {% if userpaymentserrors > 0 %} <a href="/ui/pagos-recurrentes/?recurringpay=error" role="button" class="btn btn-outline-light btn-sm">Listar Errores</a>{% endif %}
+        {% if userpaymentserrors > 0 %} <a href="/ui/pagos-recurrentes/?estado=error" role="button" class="btn btn-outline-light btn-sm">Listar Errores</a>{% endif %}
       </div>
     </div>
   </div>
@@ -24,7 +24,7 @@
       <div class="card-body text-center">
         <span class="indicator text-secondary">{{ userpaymentsact }}</span>
         <p class="text-uppercase text-secondary">Con error en recurrencia con acceso</p>
-        {% if userpaymentsact > 0 %} <a href="/ui/pagos-recurrentes/?recurringpay=erroract" role="button" class="btn btn-outline-secondary btn-sm">Listar Errores</a>{% endif %}
+        {% if userpaymentsact > 0 %} <a href="/ui/pagos-recurrentes/?estado=error_activo" role="button" class="btn btn-outline-secondary btn-sm">Listar Errores</a>{% endif %}
       </div>
     </div>
   </div>
@@ -33,7 +33,7 @@
       <div class="card-body text-center">
         <span class="indicator text-secondary">{{ userpaymentsdes }}</span>
         <p class="text-uppercase text-secondary">Con error en recurrencia sin acceso</p>
-        {% if userpaymentsdes > 0 %} <a href="/ui/pagos-recurrentes/?recurringpay=errordes" role="button" class="btn btn-outline-secondary btn-sm">Listar Errores</a>{% endif %}
+        {% if userpaymentsdes > 0 %} <a href="/ui/pagos-recurrentes/?estado=error_expirado" role="button" class="btn btn-outline-secondary btn-sm">Listar Errores</a>{% endif %}
       </div>
     </div>
   </div>
