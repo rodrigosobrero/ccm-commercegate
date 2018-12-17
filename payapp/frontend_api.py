@@ -172,10 +172,11 @@ def get_all_users(request):
 
         filtered_records = records.filter(**{ columns_dic[column_index]: filter_input })
 
-        if filter_input == 'Si':
-            filtered_records = records.filter(expiration__gt = date.today())
-        elif filter_input == 'No':
-            filtered_records = records.filter(expiration__lt = date.today())
+        if column_index == '3':
+            if filter_input == 'Si':
+                filtered_records = records.filter(expiration__gt = date.today())
+            elif filter_input == 'No':
+                filtered_records = records.filter(expiration__lt = date.today())
 
         return filtered_records
 
@@ -191,13 +192,34 @@ def get_all_users(request):
                     records_filtered = records_total
                     break
 
+    # Order Dict
+    order_dic = {
+        '0': 'user_id',
+        '1': 'email',
+        '4': 'country__number',
+        '5': 'expiration',
+    }
+
+    # Order
+    for param in datatables:
+        if param[slice(5)] == 'order':
+            column = datatables['order[0][column]']
+            direction = datatables['order[0][dir]']
+
+            if direction == 'desc':
+                records = records.order_by('-' + order_dic[column])
+            elif direction == 'asc':
+                records = records.order_by(order_dic[column])
+            break
+
     # Search
     if search:
         records = User.objects.filter(
                     Q(email__icontains = search) |
                     Q(user_id__icontains = search) |
                     Q(country__name__icontains = search) |
-                    Q(expiration__icontains = search)
+                    Q(expiration__icontains = search) |
+                    Q(card__number__icontains = search)
                   )
         records_total = records.count()
         records_filtered = records_total
@@ -336,6 +358,31 @@ def get_all_payments(request):
                     records_total = records.count()
                     records_filtered = records_total
                     break
+
+    # Order Dict
+    order_dic = {
+        '0': 'user_id',
+        '1': 'amount',
+        '2': 'currency__name',
+        '3': 'user__country__name',
+        '4': 'modification_date',
+        '5': 'payment_date',
+        '6': 'recurrence',
+        '8': 'status',
+        '9': 'retries',
+    }
+
+    # Order
+    for param in datatables:
+        if param[slice(5)] == 'order':
+            column = datatables['order[0][column]']
+            direction = datatables['order[0][dir]']
+
+            if direction == 'desc':
+                records = records.order_by('-' + order_dic[column])
+            elif direction == 'asc':
+                records = records.order_by(order_dic[column])
+            break
 
     # Search
     if search:
@@ -515,6 +562,27 @@ def get_all_payment_history(request):
                     records_total = records.count()
                     records_filtered = records_total
                     break
+
+    # Order Dict
+    order_dic = {
+        '0': 'user_payment__user__user_id',
+        '1': 'gateway_id',
+        '2': 'status',
+        '3': 'amount',
+        '4': 'modification_date',
+        '6': 'manual',
+    }
+
+    # Order
+    for param in datatables:
+        if param[slice(5)] == 'order':
+            column = datatables['order[0][column]']
+            direction = datatables['order[0][dir]']
+
+            if direction == 'desc':
+                records = records.order_by('-' + order_dic[column])
+            elif direction == 'asc':
+                records = records.order_by(order_dic[column])
 
     # Search
     if search:
