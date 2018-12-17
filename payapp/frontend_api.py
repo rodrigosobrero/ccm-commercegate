@@ -167,10 +167,10 @@ def get_all_users(request):
     }
 
     # Filter
-    def filter_table(filter_col, column_name):
+    def filter_table(filter_col, column_index):
         filter_input = filter_col.replace('^', '').replace('$', '')
 
-        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+        filtered_records = records.filter(**{ columns_dic[column_index]: filter_input })
 
         if filter_input == 'Si':
             filtered_records = records.filter(expiration__gt = date.today())
@@ -179,7 +179,7 @@ def get_all_users(request):
 
         return filtered_records
 
-    # Test
+    # Find Filters
     for key, value in columns_dic.iteritems():
         for param in datatables:
             if len(param) > 8 and param[8] == key:
@@ -309,18 +309,23 @@ def get_all_payments(request):
     }
 
     # Filter
-    def filter_table(filter_col, column_name):
+    def filter_table(filter_col, column_index):
         filter_input = filter_col.replace('^', '').replace('$', '')
 
-        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+        filtered_records = records.filter(**{ columns_dic[column_index]: filter_input })
 
         if len(filter_input) == 51:
             date = filter_input.split(',')
-            filtered_records = records.filter(modification_date__range = [date[0], date[1]])
+            # modification_date
+            if column_index == '4':
+                filtered_records = records.filter(modification_date__range = [date[0], date[1]])
+            # payment_date
+            elif column_index == '5':
+                filtered_records = records.filter(payment_date__range = [date[0][slice(10)], date[1][slice(10)]])
 
         return filtered_records
 
-    # Test
+    # Find Filters
     for key, value in columns_dic.iteritems():
         for param in datatables:
             if len(param) > 8 and param[8] == key:
@@ -484,10 +489,10 @@ def get_all_payment_history(request):
     }
 
     # Filter
-    def filter_table(filter_col, column_name):
+    def filter_table(filter_col, column_index):
         filter_input = filter_col.replace('^', '').replace('$', '')
 
-        filtered_records = records.filter(**{ columns_dic[column_name]: filter_input })
+        filtered_records = records.filter(**{ columns_dic[column_index]: filter_input })
 
         if filter_input == 'Si':
             filtered_records = records.filter(manual = True)
@@ -499,7 +504,7 @@ def get_all_payment_history(request):
 
         return filtered_records
 
-    # Test
+    # Find Filters
     for key, value in columns_dic.iteritems():
         for param in datatables:
             if len(param) > 8 and param[8] == key:
