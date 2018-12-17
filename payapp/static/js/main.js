@@ -987,15 +987,15 @@ app.columnSearch = (field, key) => {
 
     switch (key) {
       case 'error':
-        search[8] = { 'search': 'Error en recurrencia' };
+        search[8] = { 'search': 'RE' };
         break;
       case 'error_activo':
         search[7] = { 'search': 'true' };
-        search[8] = { 'search': 'Error en recurrencia' };
+        search[8] = { 'search': 'RE' };
         break;
       case 'error_expirado':
         search[7] = { 'search': 'false' };
-        search[8] = { 'search': 'Error en recurrencia' };
+        search[8] = { 'search': 'RE' };
         break;
     }
   } else if (field == 'usuario' && key) {
