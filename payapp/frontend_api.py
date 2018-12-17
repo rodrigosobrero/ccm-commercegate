@@ -591,7 +591,8 @@ def get_all_payment_history(request):
                     Q(gateway_id__icontains = search) |
                     Q(amount__icontains = search) |
                     Q(modification_date__icontains = search) |
-                    Q(manual__icontains = search)
+                    Q(manual__icontains = search) |
+                    Q(message__icontains = search)
                   )
         records_total = records.count()
         records_filtered = records_total
