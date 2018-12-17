@@ -73,6 +73,7 @@ app.iniTable = prm => {
       { extend: 'pdfHtml5', className: 'btn-sm btn-ccm' }
     ],
     serverSide: true,
+    pageLength: 100,
     // stateSave: true,
     // processing: true,
     bLengthChange: false,
