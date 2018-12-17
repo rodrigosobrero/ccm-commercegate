@@ -196,7 +196,7 @@ def get_all_users(request):
     order_dic = {
         '0': 'user_id',
         '1': 'email',
-        '4': 'country__number',
+        '4': 'country__name',
         '5': 'expiration',
     }
 
