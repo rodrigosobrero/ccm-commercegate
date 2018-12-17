@@ -98,8 +98,12 @@ app.iniTable = prm => {
 
         // Borra input search nuevo e inicializa uno custom
         $('#table_filter').remove();
-        $('#search-box').keyup(function () {
-          table.search($(this).val()).draw();
+        $('#search-box').keyup(function (e) {
+          if (e.keyCode != 8 && $(this).val().length > 3) {
+            table.search($(this).val()).draw();
+          } else if (e.keyCode == 8 && $(this).val().length == 0) {
+            table.search('').draw();
+          }
         });
 
         // Inicializa plugin custom para filtro

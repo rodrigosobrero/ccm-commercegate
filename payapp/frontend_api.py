@@ -586,17 +586,12 @@ def get_all_payment_history(request):
 
     # Search
     if search:
-        records = UserPayment.objects.filter(
-                    Q(user__user_id__icontains = search) |
+        records = PaymentHistory.objects.filter(
+                    Q(user_payment__user__user_id__icontains = search) |
+                    Q(gateway_id__icontains = search) |
                     Q(amount__icontains = search) |
-                    Q(currency__name__icontains = search) |
-                    Q(user__country__name__icontains = search) |
-                    Q(recurrence__icontains = search) |
-                    Q(retries__icontains = search) |
-                    Q(message__icontains = search) |
-                    Q(payment_date__icontains = search) |
-                    Q(payday__icontains = search) |
-                    Q(message__icontains = search)
+                    Q(modification_date__icontains = search) |
+                    Q(manual__icontains = search)
                   )
         records_total = records.count()
         records_filtered = records_total
