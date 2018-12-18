@@ -408,8 +408,10 @@ def get_all_payments(request):
     try:
         object_list = paginator.page(page_number).object_list
     except PageNotAnInteger:
+        print 'PageNotAnInteger'
         object_list = paginator.page(1).object_list
     except EmptyPage:
+        print 'EmptyPage'
         object_list = paginator.page(1).object_list
 
     countries = Country.get_all()

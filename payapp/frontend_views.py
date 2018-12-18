@@ -34,7 +34,7 @@ def logout_view(request):
 @login_required(login_url='login')
 def dashboard(request):
     userpaymentsErrors = UserPayment.objects.filter(status='RE').count()
-    userpaymentsAct = UserPayment.objects.filter(status='RE', user__expiration__gt = date.today()).count()
+    userpaymentsAct = UserPayment.objects.filter(status='RE', user__expiration__gte = date.today()).count()
     userpaymentsDes = UserPayment.objects.filter(status='RE', user__expiration__lt = date.today()).count()
 
     context = { 'title': 'Dashboard', 'userpaymentserrors': userpaymentsErrors, 'userpaymentsact': userpaymentsAct, 'userpaymentsdes': userpaymentsDes }
