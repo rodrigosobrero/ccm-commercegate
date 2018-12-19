@@ -327,6 +327,7 @@ def get_all_payments(request):
         '4': 'user__country__name',
         '5': 'user__country__name',
         '6': 'recurrence',
+        '7': 'user__country__name',
         '8': 'status',
     }
 
@@ -337,13 +338,20 @@ def get_all_payments(request):
         filtered_records = records.filter(**{ columns_dic[column_index]: filter_input })
 
         if len(filter_input) == 51:
-            date = filter_input.split(',')
+            date_filter = filter_input.split(',')
             # modification_date
             if column_index == '4':
-                filtered_records = records.filter(modification_date__range = [date[0], date[1]])
+                filtered_records = records.filter(modification_date__range = [date_filter[0], date_filter[1]])
             # payment_date
             elif column_index == '5':
-                filtered_records = records.filter(payment_date__range = [date[0][slice(10)], date[1][slice(10)]])
+                filtered_records = records.filter(payment_date__range = [date_filter[0][slice(10)], date_filter[1][slice(10)]])
+
+        # expiration
+        if column_index == '7':
+            if filter_col == 'true':
+                filtered_records = records.filter(user__expiration__gt = date.today())
+            elif filter_col == 'false':
+                filtered_records = records.filter(user__expiration__lte = date.today())
 
         return filtered_records
 
