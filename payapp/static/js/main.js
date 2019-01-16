@@ -823,7 +823,7 @@ app.modalRePayUser = prm => {
  */
 app.modalRePayDetail = prm => {
   $.ajax({
-    url: app.config.api + 'paymenthistory/' + prm + '/10',
+    url: app.config.api + 'paymenthistory/' + prm + '/all',
     method: 'GET'
   }).done((data) => {
     let recurrence = '';
