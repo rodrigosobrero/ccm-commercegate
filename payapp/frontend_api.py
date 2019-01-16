@@ -625,8 +625,8 @@ def get_all_payment_history(request):
         payment.code = ''
 
         try:
-            message = json.loads(payment.message.replace(
-                "'", "\"").replace("u\"", "\"").replace("None", "null"))
+            message = json.loads(payment.message.replace("u'", "\"").replace("': '", "\": \"").replace("':", "\":").replace(
+                "',", "\",").replace("'}", "\"}").replace("None", "null").replace("'", "").replace("u\"", "\""))
         except:
             continue
         if 'transaction' in message:

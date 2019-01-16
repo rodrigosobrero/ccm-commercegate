@@ -843,7 +843,7 @@ app.modalRePayDetail = prm => {
 
       data.data.forEach(element => {
         recurrence += `<tr>
-                        <td>${element.gateway_id}</td>
+                        <td>${element.gateway_id ? element.gateway_id : '-'}</td>
                         <td>${this.renders.hisPayState(element.status)}</td>
                         <td>${this.renders.date(element.modification_date)}</td>
                         <td>${this.renders.boolean(element.manual)}</td>
