@@ -104,7 +104,9 @@ ccm-venv/
 payapp/migrations/
 *.pyc
 db.sqlite3
-settings.py
+# settings.py
 pid/
 log/
 
+# visual studio code
+.vscode
