@@ -1,7 +1,0 @@
-PENDIENTES
-
-* paginador en listado
-* nuevo listado con todos los registros
-
-
-python manage.py createsuperuser --username=admin --email=admin@example.com q1w2e3r4
