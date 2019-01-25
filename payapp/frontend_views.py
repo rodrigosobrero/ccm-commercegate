@@ -63,3 +63,10 @@ def users(request):
 
     context = { 'title': 'Usuarios' }
     return render(request, 'content/content.html', context)
+
+# /commercegate
+@require_http_methods(["GET", "POST"])
+def commercegate(request):
+
+    context = { 'title': 'CommerceGate' }
+    return render(request, 'content/commercegate.html', context)

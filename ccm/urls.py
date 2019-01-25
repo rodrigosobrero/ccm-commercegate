@@ -48,4 +48,7 @@ urlpatterns = [
     url(r'^ui/usuarios/', users, name='users'),
     url(r'^ui/pagos-recurrentes/', userpayments, name='userpayments'),
     url(r'^ui/historial-pagos/', paymenthistory, name='paymenthistory'),
+
+    # CommerceGate
+    url(r'^ui/commercegate)', commercegate, name='commercegate'),
 ]
