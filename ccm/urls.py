@@ -50,5 +50,5 @@ urlpatterns = [
     url(r'^ui/historial-pagos/', paymenthistory, name='paymenthistory'),
 
     # CommerceGate
-    url(r'^ui/commercegate)', commercegate, name='commercegate'),
+    url(r'^api/v1/callback/commercegate)', commercegate, name='commercegate'),
 ]

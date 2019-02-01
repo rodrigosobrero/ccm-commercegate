@@ -34,6 +34,10 @@ from misc import paymentez_intercom_metadata
 
 from intercom import Intercom
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Response Codes
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -171,3 +175,38 @@ def callback_paymentez(request):
         print "CALLBACK_CLIENT: %s" % str(data)
         body = {"status": "error", "message": "ignoring callback: app_code"}
         return HttpResponse(json.dumps(body), content_type="application/json", status=200)
+
+# Callback CommerceGate
+@require_http_methods(["POST"])
+def callback_commercegate(request):
+    try:
+        data = request.body
+    except Exception:
+        body = { 'status': 'error', 'message': 'error loading request' }
+        return HttpResponse(json.dumps(body), content_type='application/json', status=200)
+
+    data_array = data.split('#')
+
+    logger.error(data_array)
+
+    data = {}
+    data['transaction_type']            = message[0]
+    data['transaction_id']              = message[1]
+    data['transaction_reference_id']    = message[2]
+    data['offer_name']                  = message[3]
+    data['offer_id']                    = message[4]
+    data['ammount']                     = message[5]
+    data['currency']                    = message[6]
+    data['user_id']                     = message[7]
+    data['user_pw']                     = message[8]
+    data['email']                       = message[9]
+    data['ip']                          = message[10]
+    data['country_iso']                 = message[11]
+    data['card_holder']                 = message[12]
+    data['customer_id']                 = message[13]
+    data['website_id']                  = message[14]
+
+    body = { 'status': 'success', 'message': data }
+
+    # logger.info(json.dumps(body))
+    return HttpResponse(json.dumps(body), content_type='application/json', status=200)
