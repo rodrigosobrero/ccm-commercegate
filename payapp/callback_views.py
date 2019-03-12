@@ -208,5 +208,5 @@ def callback_commercegate(request):
 
     body = { 'status': 'success', 'message': data }
 
-    # logger.info(json.dumps(body))
+    logger.info(json.dumps(body))
     return HttpResponse(json.dumps(body), content_type='application/json', status=200)

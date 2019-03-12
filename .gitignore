@@ -110,3 +110,6 @@ log/
 
 # visual studio code
 .vscode
+
+# Mac
+.DS_Store
