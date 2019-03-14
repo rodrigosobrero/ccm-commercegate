@@ -179,6 +179,8 @@ def callback_paymentez(request):
 # Callback CommerceGate
 @require_http_methods(["POST"])
 def callback_commercegate(request):
+    logger.error(request)
+
     try:
         data = request.body
     except Exception:
