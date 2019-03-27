@@ -34,6 +34,7 @@ from misc import paymentez_intercom_metadata
 
 from intercom import Intercom
 
+import untagle
 import logging
 
 logger = logging.getLogger(__name__)
@@ -177,38 +178,29 @@ def callback_paymentez(request):
         return HttpResponse(json.dumps(body), content_type="application/json", status=200)
 
 # Callback CommerceGate
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 def callback_commercegate(request):
-    logger.error(request)
-
     try:
-        data = request.body
+        data            = request.body
+        request_unquote = urllib.unquote_plus(data)
+        xml             = xmltodict.parse(request_unquote[22:])
     except Exception:
-        body = { 'status': 'error', 'message': 'error loading request' }
-        return HttpResponse(json.dumps(body), content_type='application/json', status=200)
+        body = { 'status': 'error', 'message': 'no callback message' }
+        return HttpResponse(json.dumps(body), content_type='application/json', status=200)        
 
-    data_array = data.split('#')
+    transaction_type = xml['cgCallback']['TransactionType']
 
-    logger.error(data_array)
+    if transaction_type == 'SELL':
+        print 'VENTA'
+    elif transaction_type == 'REBILL':
+        print 'RECURRENCIA'
+    elif transaction_type == 'REFUND':
+        print 'DEVOLUCION'
+    elif transaction_type == 'CANCELMEMBERSHIPNOTIFY':
+        print 'NOTIFICACION CANCELACION'
+    elif transaction_type == 'CANCELMEMBERSHIP':
+        print 'CANCELACION'
+    else
+        print 'NO TRANSACTION TYPE'
 
-    data = {}
-    data['transaction_type']            = message[0]
-    data['transaction_id']              = message[1]
-    data['transaction_reference_id']    = message[2]
-    data['offer_name']                  = message[3]
-    data['offer_id']                    = message[4]
-    data['ammount']                     = message[5]
-    data['currency']                    = message[6]
-    data['user_id']                     = message[7]
-    data['user_pw']                     = message[8]
-    data['email']                       = message[9]
-    data['ip']                          = message[10]
-    data['country_iso']                 = message[11]
-    data['card_holder']                 = message[12]
-    data['customer_id']                 = message[13]
-    data['website_id']                  = message[14]
-
-    body = { 'status': 'success', 'message': data }
-
-    logger.info(json.dumps(body))
-    return HttpResponse(json.dumps(body), content_type='application/json', status=200)
+    return HttpResponse('SUCCESS', content_type='text/plain', status='200')
