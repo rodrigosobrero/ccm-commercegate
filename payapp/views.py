@@ -215,20 +215,20 @@ def create_payment(request):
         payday = __payday_calc(data['payment_date'])
         if 'discount' in data and 'disc_counter' in data:
             up = UserPayment.create(user, 
-                                    data['amount'], 
-                                    currency, 
-                                    data['payment_date'], 
-                                    payday, 
                                     data['recurrence'],
+                                    data['amount'],
+                                    currency,
+                                    data['payment_date'],
+                                    payday,
                                     data['discount'],
                                     data['disc_counter'])
         else:
-            up = UserPayment.create(user, 
-                                    data['amount'], 
-                                    currency, 
+            up = UserPayment.create(user,
+                                    data['recurrence'],
+                                    data['amount'],
+                                    currency,
                                     data['payment_date'],
-                                    payday, 
-                                    data['recurrence'])
+                                    payday)
     except Exception as e:
         user_message = "Ocurrió un error con el pago, por favor reintente nuevamente más tarde"
         message = "could not create user payment: (%s)" % str(e)
@@ -261,7 +261,7 @@ def create_payment(request):
             payment_id = "PH_%s_%d" % (user.user_id, int(time()))
 
             # Creo el registro en PaymentHistory
-            ph = PaymentHistory.create(up, card, payment_id, integrator, disc_pct)
+            ph = PaymentHistory.create(up, payment_id, integrator, card, disc_pct)
 
             if ph.amount > 0:
                 try:

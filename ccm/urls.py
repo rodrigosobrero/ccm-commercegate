@@ -5,7 +5,9 @@ from payapp.views import create_payment, payment_discount, cancel_payment, chang
 from payapp.frontend_api import get_user, get_all_users, get_user_payment, get_all_payments, get_payment_history, get_all_payment_history, expireuser, activateuser, deleteuserpayment, manual_payment, filter_countries, filter_status_recurrence, filter_status_history, filter_recurrence, filter_boolean
 from payapp.frontend_views import login_view, logout_view, dashboard, users, userpayments, paymenthistory
 
-from payapp.callback_views import callback_paymentez, callback_commercegate, iframe_commercegate
+from payapp.commercegate_views import create_payment
+
+from payapp.callback_views import callback_paymentez, callback_commercegate
 
 urlpatterns = [
 
@@ -52,5 +54,6 @@ urlpatterns = [
     # CommerceGate
     url(r'^ui/commercegate/', commercegate, name='commercegate'),
     url(r'^api/v1/callback/commercegate', callback_commercegate),
-    url(r'^api/v1/get/commercegate-url', iframe_commercegate),
+    url(r'^api/v1/commercegate/get/form', payment_commercegate)
+    # url(r'^api/v1/commercegate/set/cancel) (POST (user_id)  )
 ]
